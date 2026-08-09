@@ -4,598 +4,199 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Progress — CandleLit Studio</title>
-<meta name="description" content="Task and schedule tracker.">
+<meta name="description" content="Task completion.">
 <style>
-  /* Fills are darkened steps of the validated hues, chosen so WHITE LABEL TEXT
-     clears 4.5:1 at the LIGHTEST end of each gradient — the bright base hues
-     would have failed it (aqua sat near 2.6:1). They still clear 4:1 against
-     both page surfaces and pass all-pairs colourblind separation. */
+  /* Fills are darkened steps of validated hues so WHITE LABEL TEXT clears
+     4.5:1 at the lightest end of each gradient — the bright originals failed
+     it badly (the green sat near 2.6:1). They also hold 4:1 against both page
+     surfaces and pass all-pairs colourblind separation. */
   :root{
     color-scheme: light;
-    --plane:#fbfbfa; --surface:#fff; --raise:#fff;
+    --plane:#fbfbfa; --surface:#fff;
     --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#8a8983;
-    --grid:#ececea; --rule:#cfcecb;
-    --ring:rgba(11,11,11,.09);
+    --rule:#cfcecb; --ring:rgba(11,11,11,.09);
     --gw-a:#2976d2;    --gw-b:#2261ac;
     --admin-a:#c1552b; --admin-b:#9e4623;
     --site-a:#15875e;  --site-b:#116f4d;
     --park-a:#767671;  --park-b:#61615d;
-    --rest:#4c4b47;    /* the not-yet-done part of a chip */
+    --rest:#4c4b47;
     --on:#fff;
-    --drop:rgba(41,118,210,.09);
     --shadow:0 1px 2px rgba(11,11,11,.07);
-    --lift:0 10px 26px rgba(11,11,11,.26);
   }
-  /* Dark keeps the SAME fills — they clear 4.05:1 against the dark plane, so a
-     chip still reads as a chip and the white label stays legible in both modes. */
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --plane:#141413; --surface:#1e1e1c; --raise:#262624;
+      --plane:#141413; --surface:#1e1e1c;
       --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
-      --grid:#2c2c2a; --rule:#3d3d39;
-      --ring:rgba(255,255,255,.11);
+      --rule:#3d3d39; --ring:rgba(255,255,255,.11);
       --rest:#565550;
-      --drop:rgba(57,135,229,.15);
       --shadow:none;
-      --lift:0 10px 26px rgba(0,0,0,.65);
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --plane:#141413; --surface:#1e1e1c; --raise:#262624;
+    --plane:#141413; --surface:#1e1e1c;
     --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
-    --grid:#2c2c2a; --rule:#3d3d39;
-    --ring:rgba(255,255,255,.11);
+    --rule:#3d3d39; --ring:rgba(255,255,255,.11);
     --rest:#565550;
-    --drop:rgba(57,135,229,.15);
     --shadow:none;
-    --lift:0 10px 26px rgba(0,0,0,.65);
   }
 
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
   body{
     margin:0;background:var(--plane);color:var(--ink);
     font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
     -webkit-text-size-adjust:100%;
-    overscroll-behavior-y:none;
   }
-  body.dragging{user-select:none;-webkit-user-select:none;touch-action:none}
-  .wrap{max-width:680px;margin:0 auto;padding:0 14px calc(80px + env(safe-area-inset-bottom))}
-
-  /* ---------------- top bar ---------------- */
-  .bar{
-    position:sticky;top:0;z-index:40;background:var(--plane);
-    padding:14px 0 10px;border-bottom:1px solid var(--grid);
-    display:flex;align-items:center;gap:10px;
-  }
-  .bar h1{font-size:17px;margin:0;letter-spacing:-.01em;white-space:nowrap}
-  .bar .up{font-size:11.5px;color:var(--ink-muted);margin-left:2px}
-  .bar .sp{margin-left:auto}
-  .btn{
-    background:var(--surface);color:var(--ink-2);border:1px solid var(--ring);
-    border-radius:8px;padding:6px 10px;font:inherit;font-size:12.5px;
-    cursor:pointer;line-height:1;white-space:nowrap;
-  }
-  .btn:hover{color:var(--ink)}
-
-  .counts{display:flex;gap:14px;padding:11px 0 4px;font-size:12px;color:var(--ink-muted)}
-  .counts b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
-
-  /* ---------------- day sections ---------------- */
-  .day{margin-top:6px;border-radius:12px;transition:background .12s}
-  .day.over{background:var(--drop)}
-  .day.away .dh .dd{color:var(--ink-muted)}
-
-  .dh{
-    position:sticky;top:52px;z-index:20;background:var(--plane);
-    display:flex;align-items:baseline;gap:8px;
-    padding:9px 6px 7px;border-bottom:1px solid var(--grid);
-  }
-  .dh .dd{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
-  .dh .dw{font-size:11.5px;color:var(--ink-muted)}
-  .dh .tag{
-    margin-left:auto;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
-    font-weight:650;padding:2px 7px;border-radius:99px;border:1px solid var(--ring);
-    color:var(--ink-muted);
-  }
-  .dh .tag.shift{color:var(--gw-a);border-color:currentColor}
-  .dh .tag.desk {color:var(--site-a);border-color:currentColor}
-  .dh .tag.key  {color:var(--admin-a);border-color:currentColor}
-  .day.today .dh{border-bottom-color:var(--ink)}
-  .day.today .dh .dd::after{content:" · today";color:var(--ink-muted);font-weight:500;font-size:11.5px}
-
-  .slot{min-height:34px;padding:7px 4px 10px;display:flex;flex-direction:column;gap:7px}
-  .slot:empty::after{
-    content:"—";color:var(--ink-muted);opacity:.4;font-size:12px;padding:2px 4px;
+  .list{
+    max-width:600px;margin:0 auto;
+    padding:22px 14px calc(40px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:8px;
   }
 
-  /* ---------------- task pill ---------------- */
-  /* The chip IS the progress bar. Layer one paints the remainder grey from the
-     progress point rightward; layer two is the category fill underneath. So the
-     coloured part is what's done and the grey is what's left. --p is set inline
-     per task. A task with no subtasks has nothing to measure and stays 100%. */
+  /* The chip IS the bar: layer one paints the remainder grey from the completion
+     point rightward, layer two is the category fill underneath. --p is inline. */
   .pill{
-    --p:100%;
-    border-radius:999px;overflow:hidden;box-shadow:var(--shadow);
+    --p:0%;
+    border-radius:999px;overflow:hidden;
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.07);
     background:
       linear-gradient(90deg,
         rgba(0,0,0,0) 0, rgba(0,0,0,0) var(--p),
         var(--rest) var(--p), var(--rest) 100%),
       linear-gradient(170deg,var(--a),var(--b));
-    transition:border-radius .16s, box-shadow .12s, opacity .12s, filter .12s;
+    transition:border-radius .16s, filter .12s;
   }
-  /* keeps the chip edge readable on the dark plane, where the remainder grey
-     sits close to the background */
-  .pill:not(.done){box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.07)}
   .cat-gw   {--a:var(--gw-a);    --b:var(--gw-b)}
   .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
   .cat-site {--a:var(--site-a);  --b:var(--site-b)}
   .cat-park {--a:var(--park-a);  --b:var(--park-b)}
   .pill:hover{filter:brightness(1.06)}
   .pill.open{border-radius:18px}
-  .pill.lifted{opacity:.3}
-  /* finished work goes quiet — a wall of saturated chips hides what is live */
-  .pill.done{background:none;border:1px solid var(--ring);box-shadow:none}
-  .pill.done .top{color:var(--ink-muted)}
-  .pill.done .lbl{text-decoration:line-through;text-decoration-thickness:1px}
-  .pill.done .glyph,.pill.done .grip,.pill.done .st,.pill.done .chev{color:var(--ink-muted)}
 
   .top{
-    display:flex;align-items:center;gap:9px;padding:10px 14px;
-    cursor:grab;touch-action:pan-y;color:var(--on);
+    display:flex;align-items:center;gap:10px;padding:11px 16px;
+    color:var(--on);cursor:pointer;
   }
-  /* the grip is the RELIABLE drag path: touch-action none means the browser
-     never steals the gesture for scrolling. Press-and-hold on the pill body
-     also works, but a fast vertical flick there scrolls instead — by design. */
-  .grip{
-    flex:none;margin:-10px 0 -10px -14px;padding:10px 5px 10px 14px;
-    color:inherit;opacity:.55;font-size:13px;line-height:1;cursor:grab;
-    touch-action:none;align-self:stretch;display:flex;align-items:center;
-  }
-  .grip:active{cursor:grabbing}
-  /* shape carries the category as well as colour, so a filled chip is still
-     identifiable without hue */
+  /* shape carries the category as well as hue, so a solid chip is never
+     identifiable by colour alone */
   .glyph{flex:none;font-size:10px;opacity:.8;width:11px;text-align:center}
   .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0;font-weight:500}
-  .st{
-    font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;
-    opacity:.75;flex:none;
+  .pct{
+    flex:none;font-size:11.5px;font-weight:700;opacity:.9;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;
   }
-  /* the count is the non-colour reading of the same progress */
-  .frac{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.85;flex:none}
-  .chev{flex:none;font-size:10px;opacity:.7;transition:transform .16s}
+  .chev{flex:none;font-size:10px;opacity:.65;transition:transform .16s}
   .pill.open .chev{transform:rotate(90deg)}
 
-  /* expanded: coloured header, plain panel beneath, so subtask text stays readable */
-  .fold{display:none;background:var(--surface);padding:11px 14px 13px 32px}
+  .fold{display:none;background:var(--surface);padding:12px 16px 14px}
   .pill.open .fold{display:block}
-  .fold ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
-  .fold .meta + ul{margin-top:9px}
-  .fold li{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--ink-2);cursor:pointer}
-  .fold li .box{
-    flex:none;width:15px;height:15px;border-radius:5px;border:1.5px solid var(--rule);
-    margin-top:1px;display:flex;align-items:center;justify-content:center;
-    font-size:10px;color:transparent;line-height:1;
-  }
-  .fold li.on .box{background:var(--ink);border-color:var(--ink);color:var(--plane)}
-  .fold li.on span{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
-  .fold .meta{font-size:12px;color:var(--ink-muted);margin:0}
-
-  /* ---------------- ghost ---------------- */
-  #ghost{
-    position:fixed;z-index:100;pointer-events:none;left:0;top:0;
-    box-shadow:var(--lift);border-radius:999px;opacity:.97;
-  }
-
-  .legend{display:flex;flex-wrap:wrap;gap:8px 15px;padding:16px 4px 4px;font-size:12.5px;color:var(--ink-2)}
-  .legend span{display:inline-flex;align-items:center;gap:6px}
-  .legend i{width:9px;height:9px;border-radius:50%}
-
-  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--grid);
-         color:var(--ink-muted);font-size:12px}
-  #out{
-    width:100%;height:150px;margin-top:8px;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
-    background:var(--surface);color:var(--ink-2);border:1px solid var(--ring);
-    border-radius:8px;padding:9px;resize:vertical;
-  }
-  summary{cursor:pointer;font-size:12.5px}
-  .hint{padding:10px 4px 0;font-size:12.5px;color:var(--ink-muted)}
+  .fold p{margin:0;font-size:12.5px;color:var(--ink-muted)}
+  .fold ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .fold p + ul{margin-top:10px}
+  .fold li{display:flex;gap:9px;font-size:13px;color:var(--ink-2)}
+  .fold li::before{content:"–";color:var(--ink-muted);flex:none}
+  .fold li.on{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
 </style>
 </head>
 <body>
-<div class="wrap">
-
-  <div class="bar">
-    <h1>🕯️ Progress</h1>
-    <span class="up" id="up"></span>
-    <span class="sp"></span>
-    <button class="btn" id="today">Today</button>
-    <button class="btn" id="theme">Theme</button>
-  </div>
-
-  <div class="counts" id="counts"></div>
-  <div class="hint">Tap a task to open it. Press and hold to drag it to another day.</div>
-
-  <div id="feed"></div>
-
-  <div class="legend">
-    <span><i style="background:var(--gw-a)"></i> ● Guess When</span>
-    <span><i style="background:var(--admin-a)"></i> ◆ Admin</span>
-    <span><i style="background:var(--site-a)"></i> ▲ Sites</span>
-    <span><i style="background:var(--park-a)"></i> ○ Parked</span>
-  </div>
-
-  <footer>
-    <div>Changes save on this device. Export to make them permanent.</div>
-    <details>
-      <summary>Export — paste over the <code>saved</code> line in index.html</summary>
-      <textarea id="out" readonly spellcheck="false"></textarea>
-      <button class="btn" id="copy" style="margin-top:8px">Copy</button>
-      <button class="btn" id="reset" style="margin-top:8px">Reset to file</button>
-    </details>
-  </footer>
-</div>
+<div class="list" id="list"></div>
 
 <script>
 /* ==========================================================
-   EDIT THIS BLOCK
-   cat:   gw | admin | site | park
-   state: done | now | next | blocked
+   pct = completion, 0–100. cat = gw | admin | site | park
    ========================================================== */
-const DATA = {
-  updated:"2026-08-09",
-  horizonDays:35,
-  dayTypes:{
-    "2026-08-09":"shift","2026-08-12":"shift",
-    "2026-08-10":"desk","2026-08-11":"desk","2026-08-13":"desk","2026-08-14":"desk",
-    "2026-08-29":"key","2026-08-31":"key","2026-09-05":"key","2026-09-11":"key"
-  },
-  away:[{from:"2026-09-15",to:"2026-10-24"}],
-  notes:{
-    "2026-08-29":"Ship decision",
-    "2026-09-05":"Hard wall — last safe launch date",
-    "2026-09-15":"Greece",
-    "2026-08-13":"Rota out"
-  },
-  tasks:[
-    {id:"track", cat:"gw", d:"2026-08-10", state:"now", t:"Push a build to the test track",
-     note:"Store is on versionCode 9 while the working build is 21.",
-     sub:[["Pick the build to promote",false],["Upload to closed test",false],["Confirm testers get the update",false]]},
+const TASKS = [
+  {cat:"gw", pct:100, t:"Review the 291 suspect years",
+   note:"237 corrected, 20 kept, 34 held back. Deck live.",
+   sub:[["Diagnose and bucket",1],["Research every suspect",1],["Apply and upload",1]]},
 
-    {id:"cards", cat:"gw", d:"2026-08-10", state:"now", t:"Rule the 79 held cards",
-     note:"Phone work — read a card, make a call.",
-     sub:[["34 wrong-title cards",false],["45 quality cards",false],["Hand rulings back to be applied",false]]},
+  {cat:"gw", pct:100, t:"Deck quality sweep",
+   note:"73 categories and 56 fields corrected."},
 
-    {id:"email", cat:"gw", d:"2026-08-11", state:"next", t:"Fix store support-email typo",
-     sub:[["Update the contact address",false]]},
+  {cat:"gw", pct:100, t:"Wrong-placement message fixes",
+   note:"Wrapping, timing and the -HP position.",
+   sub:[["Wrap by width, not a newline",1],["Move -HP below the result",1],["Retime all three beats",1]]},
 
-    {id:"drag", cat:"gw", d:"2026-08-11", state:"next", t:"Drag + prediction projection",
-     note:"Hard cutoff. If it isn't clearly better, ship what already works.",
-     sub:[["Prototype the projection",false],["Play it on a phone",false],["Keep or revert — decide",false]]},
+  {cat:"gw", pct:100, t:"Expedition roguelite mode",
+   note:"Map, routes, relics, boss, balance simulator."},
 
-    {id:"place", cat:"gw", d:"2026-08-13", state:"next", t:"Component placement",
-     sub:[["Lay out the play area",false],["Check both screen widths",false]]},
+  {cat:"gw", pct:0, t:"Push a build to the test track",
+   note:"Store is on versionCode 9 while the working build is 21.",
+   sub:[["Pick the build to promote",0],["Upload to closed test",0],["Confirm testers get it",0]]},
 
-    {id:"look", cat:"gw", d:"2026-08-14", state:"next", t:"Look and visual polish",
-     sub:[["Colour and spacing pass",false],["Lithuanian overflow check",false]]},
+  {cat:"gw", pct:0, t:"Rule the 79 held cards",
+   note:"Phone work — read a card, make a call.",
+   sub:[["34 wrong-title cards",0],["45 quality cards",0],["Hand rulings back",0]]},
 
-    {id:"expo", cat:"gw", d:"2026-08-14", state:"next", t:"Test Expedition on non-trivia players",
-     note:"The bridge thesis. The people written off as cosmetic testers are the only ones who can prove it.",
-     sub:[["Get it in front of four of them",false],["Watch whether they play unprompted",false]]},
+  {cat:"gw", pct:0, t:"Drag and prediction projection",
+   note:"Hard cutoff. If it isn't clearly better, ship what already works.",
+   sub:[["Prototype the projection",0],["Play it on a phone",0],["Keep or revert",0]]},
 
-    {id:"mp", cat:"gw", d:"2026-08-17", state:"next", t:"Multiplayer stress test",
-     note:"Book the people first — calendars are the long pole, not the code.",
-     sub:[["Agree a time with two testers",false],["Run it on a near-final build",false]]},
+  {cat:"gw", pct:0, t:"Component placement",
+   sub:[["Lay out the play area",0],["Check both screen widths",0]]},
 
-    {id:"ship", cat:"gw", d:"2026-08-29", state:"next", t:"Ship decision",
-     sub:[["Test window complete",false],["Content accuracy acceptable",false],["Go or slip — decide",false]]},
+  {cat:"gw", pct:0, t:"Look and visual polish",
+   sub:[["Colour and spacing pass",0],["Lithuanian overflow check",0]]},
 
-    {id:"sec", cat:"admin", d:"2026-08-10", state:"now", t:"Security housekeeping",
-     sub:[["Finish the list",false],["Delete the originals",false],["Rotate the important ones",false]]},
+  {cat:"gw", pct:0, t:"Test Expedition on non-trivia players",
+   note:"The bridge thesis. The testers written off as cosmetic are the only ones who can prove it.",
+   sub:[["Get it to four of them",0],["Watch for unprompted play",0]]},
 
-    {id:"paper", cat:"admin", d:"2026-09-11", state:"next", t:"Monthly paperwork",
-     note:"Do it before leaving — the deadline lands mid-trip."},
+  {cat:"gw", pct:0, t:"Multiplayer stress test",
+   note:"Book the people first — calendars are the long pole, not the code."},
 
-    {id:"notice", cat:"admin", d:"2026-08-31", state:"next", t:"Give notice for the time away",
-     note:"Two weeks' notice needed for a five-week absence."},
+  {cat:"gw", pct:0, t:"Fix store support-email typo"},
 
-    {id:"form", cat:"site", d:"", state:"blocked", t:"Contact form activation",
-     note:"Waiting on someone else."},
+  {cat:"gw", pct:0, t:"Ship decision",
+   note:"Target the 29th. The 5th of September is the hard wall."},
 
-    {id:"vector", cat:"park", d:"", state:"next", t:"Vector art tool", note:"After the farm season."},
-    {id:"loc",    cat:"park", d:"", state:"next", t:"European localisation", note:"Post-launch."},
-    {id:"imgs",   cat:"park", d:"", state:"next", t:"Self-hosted card images", note:"Post-launch."}
-  ]
-};
+  {cat:"admin", pct:60, t:"Security housekeeping",
+   note:"ESTIMATE — 31 items left but the starting total was never recorded. Correct the number.",
+   sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
 
-/* Overwrite from Export to make dragged dates permanent. */
-const saved = null;
-/* ==================== END EDITABLE BLOCK ==================== */
+  {cat:"admin", pct:0, t:"Monthly paperwork",
+   note:"Do it before leaving — the deadline lands mid-trip."},
 
-const KEY = "progress.v1";
-const CATS = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+  {cat:"admin", pct:0, t:"Give notice for the time away"},
+
+  {cat:"site", pct:100, t:"Studio site"},
+  {cat:"site", pct:100, t:"Well-drilling site"},
+  {cat:"site", pct:90,  t:"Contact form activation",
+   note:"Everything else is live. Waiting on one sign-off."},
+
+  {cat:"park", pct:0, t:"Vector art tool",         note:"After the farm season."},
+  {cat:"park", pct:0, t:"European localisation",   note:"Post-launch."},
+  {cat:"park", pct:0, t:"Self-hosted card images", note:"Post-launch."}
+];
+
 const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
-const STATES = {done:"done", now:"now", next:"", blocked:"blocked"};
-const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const pad = n => String(n).padStart(2,"0");
-const iso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
-const parse = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
-const addDays = (s,n) => { const d=parse(s); d.setDate(d.getDate()+n); return iso(d); };
-const TODAY = iso(new Date());
-
-/* ---- state: file data, overlaid by saved, overlaid by localStorage ---- */
-function load(){
-  const base = {};
-  for (const t of DATA.tasks) base[t.id] = {d:t.d, sub:(t.sub||[]).map(s=>!!s[1])};
-  const apply = src => {
-    if (!src) return;
-    for (const id in src){
-      if (!base[id]) continue;
-      if (typeof src[id].d === "string") base[id].d = src[id].d;
-      if (Array.isArray(src[id].sub)) src[id].sub.forEach((v,i)=>{ if(i<base[id].sub.length) base[id].sub[i]=!!v; });
-    }
-  };
-  apply(saved);
-  try { apply(JSON.parse(localStorage.getItem(KEY) || "null")); } catch(e){}
-  return base;
-}
-let ST = load();
-const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch(e){} refreshExport(); };
-
-const isAway = d => DATA.away.some(r => d >= r.from && d <= r.to);
-
-/* ---- which days to render ---- */
-function dayList(){
-  const set = new Set();
-  const start = TODAY;
-  for (let i = 0; i <= DATA.horizonDays; i++) set.add(addDays(start,i));
-  for (const d in DATA.dayTypes) if (d >= start) set.add(d);
-  for (const d in DATA.notes)    if (d >= start) set.add(d);
-  // a task's own day is ALWAYS rendered, even once it falls into the past —
-  // otherwise the section disappears and takes the task with it
-  for (const id in ST) if (ST[id].d) set.add(ST[id].d);
-  return [...set].sort();
-}
-
-/* ---------------- render ---------------- */
-const feed = document.getElementById("feed");
-
-// a task is done when it says so, or when every subtask is ticked
-function isDone(t){
-  const sub = t.sub || [];
-  return t.state === "done" || (sub.length > 0 && ST[t.id].sub.every(Boolean));
-}
-
-// ticked / total. no subtasks = nothing to measure, so the chip stays full colour.
-// the fill is floored at 12% so a task with nothing done keeps a coloured cap —
-// a literal 0% paints the whole chip grey and throws away its category. The
-// printed count is the honest number; the bar is the glance.
-function progress(t){
-  const n = (t.sub || []).length;
-  if (!n) return {n:0, hit:0, pct:100};
-  const hit = ST[t.id].sub.filter(Boolean).length;
-  return {n, hit, pct: Math.max(12, Math.round(hit / n * 100))};
-}
-
-function pillHTML(t){
-  const s  = ST[t.id];
-  const sub = t.sub || [];
-  const state = isDone(t) ? "done" : t.state;
-  const hot = (state === "now");
-  const p = progress(t);
-  const label = STATES[state] || "";
-  return '<div class="top">' +
-      '<span class="grip" aria-label="Drag to another day">⠿</span>' +
-      '<span class="glyph" aria-hidden="true">' + (GLYPH[t.cat] || "") + "</span>" +
-      '<span class="lbl">' + t.t + "</span>" +
-      (p.n && state !== "done"
-        ? '<span class="frac">' + p.hit + "/" + p.n + "</span>"
-        : label ? '<span class="st' + (hot ? " hot" : "") + '">' + label + "</span>" : "") +
-      ((sub.length || t.note) ? '<span class="chev">▶</span>' : "") +
-    "</div>" +
-    ((sub.length || t.note) ?
-      '<div class="fold">' +
-        (t.note ? '<p class="meta">' + t.note + "</p>" : "") +
-        (sub.length ? "<ul>" + sub.map((x,i) =>
-          '<li data-i="' + i + '" class="' + (s.sub[i] ? "on" : "") + '">' +
-            '<span class="box">✓</span><span>' + x[0] + "</span></li>").join("") + "</ul>" : "") +
-      "</div>" : "");
-}
-
-function render(){
-  const byDay = {};
-  for (const t of DATA.tasks) (byDay[ST[t.id].d || ""] ||= []).push(t);
-
-  let html = "";
-  for (const d of dayList()){
-    const dt = parse(d), type = DATA.dayTypes[d], away = isAway(d), note = DATA.notes[d];
-    html += '<section class="day' + (d===TODAY ? " today" : "") + (away ? " away" : "") +
-              '" data-d="' + d + '">' +
-      '<div class="dh">' +
-        '<span class="dd">' + dt.getDate() + " " + MO[dt.getMonth()] + "</span>" +
-        '<span class="dw">' + WD[dt.getDay()] + (note ? " · " + note : "") + "</span>" +
-        (type ? '<span class="tag ' + type + '">' + type + "</span>"
-              : away ? '<span class="tag">away</span>' : "") +
+document.getElementById("list").innerHTML = TASKS.map((t,i) => {
+  const pct = Math.max(0, Math.min(100, t.pct));
+  // floored for PAINT only so a 0% task keeps a coloured cap and stays
+  // identifiable; the printed number is always the true value
+  const paint = pct === 0 ? 12 : pct;
+  const body = t.note || (t.sub && t.sub.length);
+  return '<article class="pill cat-' + t.cat + '" style="--p:' + paint + '%" data-i="' + i + '">' +
+      '<div class="top">' +
+        '<span class="glyph" aria-hidden="true">' + GLYPH[t.cat] + "</span>" +
+        '<span class="lbl">' + t.t + "</span>" +
+        '<span class="pct">' + pct + "%</span>" +
+        (body ? '<span class="chev">▶</span>' : "") +
       "</div>" +
-      '<div class="slot" data-d="' + d + '">' +
-        (byDay[d] || []).map(t =>
-          '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" style="--p:' + progress(t).pct + '%" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
-      "</div></section>";
-  }
-  // unscheduled bucket, always a valid drop target
-  html += '<section class="day" data-d=""><div class="dh"><span class="dd">Unscheduled</span>' +
-          '<span class="dw">no date yet</span></div>' +
-          '<div class="slot" data-d="">' + (byDay[""] || []).map(t =>
-            '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" style="--p:' + progress(t).pct + '%" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
-          "</div></section>";
+      (body ? '<div class="fold">' +
+        (t.note ? "<p>" + t.note + "</p>" : "") +
+        (t.sub ? "<ul>" + t.sub.map(s =>
+          '<li class="' + (s[1] ? "on" : "") + '">' + s[0] + "</li>").join("") + "</ul>" : "") +
+      "</div>" : "") +
+    "</article>";
+}).join("");
 
-  const open = [...document.querySelectorAll(".pill.open")].map(p => p.dataset.id);
-  feed.innerHTML = html;
-  for (const id of open){
-    const p = feed.querySelector('.pill[data-id="' + id + '"]');
-    if (p) p.classList.add("open");
-  }
-  counts();
-}
-
-function counts(){
-  let open = 0, done = 0;
-  for (const t of DATA.tasks){
-    const s = ST[t.id], sub = t.sub || [];
-    const isDone = (sub.length && s.sub.every(Boolean)) || t.state === "done";
-    isDone ? done++ : open++;
-  }
-  const toShip = Math.round((parse("2026-08-29") - parse(TODAY)) / 86400000);
-  document.getElementById("counts").innerHTML =
-    "<span><b>" + open + "</b> open</span><span><b>" + done + "</b> done</span>" +
-    "<span><b>" + (toShip > 0 ? toShip : 0) + "</b> days to ship decision</span>";
-}
-
-document.getElementById("up").textContent = "updated " + DATA.updated;
-
-/* ---------------- tap: foldout + subtask ---------------- */
-feed.addEventListener("click", e => {
-  if (suppressClick){ suppressClick = false; return; }
-  const li = e.target.closest(".fold li");
-  if (li){
-    const id = li.closest(".pill").dataset.id, i = +li.dataset.i;
-    ST[id].sub[i] = !ST[id].sub[i];
-    persist(); render();
-    return;
-  }
+document.getElementById("list").addEventListener("click", e => {
   const top = e.target.closest(".top");
-  if (top) top.parentElement.classList.toggle("open");
+  if (top && top.parentElement.querySelector(".fold")) top.parentElement.classList.toggle("open");
 });
-
-/* ---------------- press-and-hold to drag ---------------- */
-let drag = null, suppressClick = false, raf = 0;
-const HOLD = 220, SLOP = 10;
-
-feed.addEventListener("pointerdown", e => {
-  const top = e.target.closest(".top");
-  if (!top || (e.pointerType === "mouse" && e.button !== 0)) return;
-  const pill = top.parentElement;
-  const start = {x:e.clientX, y:e.clientY};
-  let armed = true;
-
-  // the grip commits immediately; the pill body waits out the hold so a
-  // flick still scrolls the page
-  if (e.target.closest(".grip")){ begin(pill, e, start); return; }
-
-  const timer = setTimeout(() => {
-    if (!armed) return;
-    begin(pill, e, start);
-  }, HOLD);
-
-  const cancel = () => { armed = false; clearTimeout(timer);
-    window.removeEventListener("pointermove", watch);
-    window.removeEventListener("pointerup", cancel);
-    window.removeEventListener("pointercancel", cancel); };
-
-  const watch = ev => {
-    if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) > SLOP) cancel(); // it's a scroll
-  };
-  window.addEventListener("pointermove", watch, {passive:true});
-  window.addEventListener("pointerup", cancel, {passive:true});
-  window.addEventListener("pointercancel", cancel, {passive:true});
-});
-
-function begin(pill, e, start){
-  const r = pill.getBoundingClientRect();
-  const ghost = pill.cloneNode(true);
-  ghost.id = "ghost";
-  ghost.classList.remove("open");
-  ghost.style.width = r.width + "px";
-  document.body.append(ghost);
-  pill.classList.add("lifted");
-  document.body.classList.add("dragging");
-  if (navigator.vibrate) navigator.vibrate(12);
-
-  drag = {pill, ghost, dx:start.x - r.left, dy:start.y - r.top, y:start.y, target:null};
-  move(start.x, start.y);
-
-  window.addEventListener("pointermove", onMove, {passive:false});
-  window.addEventListener("pointerup", onUp, {passive:true});
-  window.addEventListener("pointercancel", onUp, {passive:true});
-  raf = requestAnimationFrame(edgeScroll);
-}
-
-function move(x,y){
-  drag.ghost.style.transform = "translate(" + (x-drag.dx) + "px," + (y-drag.dy) + "px)";
-  drag.y = y;
-  drag.ghost.style.visibility = "hidden";
-  const el = document.elementFromPoint(x, y);
-  drag.ghost.style.visibility = "";
-  const sec = el && el.closest(".day");
-  if (sec !== drag.target){
-    if (drag.target) drag.target.classList.remove("over");
-    drag.target = sec;
-    if (sec) sec.classList.add("over");
-  }
-}
-function onMove(e){ e.preventDefault(); move(e.clientX, e.clientY); }
-
-function edgeScroll(){
-  if (!drag) return;
-  const h = innerHeight, EDGE = 90;
-  if (drag.y < EDGE)          scrollBy(0, -Math.ceil((EDGE - drag.y)/5));
-  else if (drag.y > h - EDGE) scrollBy(0,  Math.ceil((drag.y - (h - EDGE))/5));
-  raf = requestAnimationFrame(edgeScroll);
-}
-
-function onUp(){
-  if (!drag) return;
-  cancelAnimationFrame(raf);
-  window.removeEventListener("pointermove", onMove);
-  window.removeEventListener("pointerup", onUp);
-  window.removeEventListener("pointercancel", onUp);
-
-  const to = drag.target ? drag.target.dataset.d : null;
-  const id = drag.pill.dataset.id;
-  drag.ghost.remove();
-  drag.pill.classList.remove("lifted");
-  if (drag.target) drag.target.classList.remove("over");
-  document.body.classList.remove("dragging");
-  drag = null;
-  suppressClick = true;
-  setTimeout(() => suppressClick = false, 60);
-
-  if (to !== null && to !== ST[id].d){ ST[id].d = to; persist(); render(); }
-}
-
-/* ---------------- export ---------------- */
-function refreshExport(){
-  const o = {};
-  for (const id in ST) o[id] = {d:ST[id].d, sub:ST[id].sub};
-  document.getElementById("out").value = "const saved = " + JSON.stringify(o) + ";";
-}
-document.getElementById("copy").addEventListener("click", async () => {
-  const ta = document.getElementById("out");
-  try { await navigator.clipboard.writeText(ta.value); }
-  catch(e){ ta.select(); document.execCommand("copy"); }
-  const b = document.getElementById("copy"); b.textContent = "Copied"; setTimeout(()=>b.textContent="Copy",1200);
-});
-document.getElementById("reset").addEventListener("click", () => {
-  localStorage.removeItem(KEY); ST = load(); render(); refreshExport();
-});
-
-/* ---------------- chrome ---------------- */
-document.getElementById("theme").addEventListener("click", () => {
-  const sysDark = matchMedia("(prefers-color-scheme: dark)").matches;
-  const cur = document.documentElement.getAttribute("data-theme") || (sysDark ? "dark" : "light");
-  document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
-});
-document.getElementById("today").addEventListener("click", () => {
-  const el = document.querySelector(".day.today");
-  if (el) el.scrollIntoView({block:"start"});
-});
-
-render();
-refreshExport();
 </script>
 </body>
 </html>
