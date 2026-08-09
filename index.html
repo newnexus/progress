@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Progress — CandleLit Studio</title>
-<meta name="description" content="Task completion.">
+<meta name="description" content="Task completion by day.">
 <style>
   /* Fills are darkened steps of validated hues so WHITE LABEL TEXT clears
      4.5:1 at the lightest end of each gradient — the bright originals failed
@@ -14,7 +14,7 @@
     color-scheme: light;
     --plane:#fbfbfa; --surface:#fff;
     --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#8a8983;
-    --rule:#cfcecb; --ring:rgba(11,11,11,.09);
+    --rule:#e6e5e2; --ring:rgba(11,11,11,.09);
     --gw-a:#2976d2;    --gw-b:#2261ac;
     --admin-a:#c1552b; --admin-b:#9e4623;
     --site-a:#15875e;  --site-b:#116f4d;
@@ -22,24 +22,25 @@
     --rest:#4c4b47;
     --on:#fff;
     --shadow:0 1px 2px rgba(11,11,11,.07);
+    --now-shadow:0 2px 10px rgba(11,11,11,.10);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
       --plane:#141413; --surface:#1e1e1c;
       --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
-      --rule:#3d3d39; --ring:rgba(255,255,255,.11);
+      --rule:#2c2c2a; --ring:rgba(255,255,255,.11);
       --rest:#565550;
-      --shadow:none;
+      --shadow:none; --now-shadow:0 2px 12px rgba(0,0,0,.5);
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
     --plane:#141413; --surface:#1e1e1c;
     --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
-    --rule:#3d3d39; --ring:rgba(255,255,255,.11);
+    --rule:#2c2c2a; --ring:rgba(255,255,255,.11);
     --rest:#565550;
-    --shadow:none;
+    --shadow:none; --now-shadow:0 2px 12px rgba(0,0,0,.5);
   }
 
   *{box-sizing:border-box}
@@ -48,14 +49,49 @@
     font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
     -webkit-text-size-adjust:100%;
   }
-  .list{
-    max-width:600px;margin:0 auto;
-    padding:22px 14px calc(40px + env(safe-area-inset-bottom));
-    display:flex;flex-direction:column;gap:8px;
-  }
+  .wrap{max-width:600px;margin:0 auto;
+        padding:16px 14px calc(48px + env(safe-area-inset-bottom))}
 
-  /* The chip IS the bar: layer one paints the remainder grey from the completion
-     point rightward, layer two is the category fill underneath. --p is inline. */
+  /* ---------------- day block ---------------- */
+  .day{margin-bottom:14px}
+  .dh{display:flex;align-items:baseline;gap:8px;padding:6px 4px 7px;
+      border-bottom:1px solid var(--rule)}
+  .dh .dd{font-size:13px;font-weight:650;color:var(--ink-2);letter-spacing:-.01em}
+  .dh .dw{font-size:11.5px;color:var(--ink-muted)}
+  .dh .note{margin-left:auto;font-size:11px;color:var(--ink-muted);text-align:right}
+  .slot{padding-top:8px;display:flex;flex-direction:column;gap:7px}
+  .slot:empty::after{content:"—";color:var(--ink-muted);opacity:.35;font-size:12px;padding-left:4px}
+
+  /* today and tomorrow are the only two days that can still be acted on, so
+     they get the weight; everything else is context */
+  .day.now{margin:6px 0 20px}
+  .day.now .dh{border-bottom:2px solid var(--ink);padding-bottom:8px}
+  .day.now .dh .dd{font-size:17px;color:var(--ink);letter-spacing:-.02em}
+  .day.next .dh{border-bottom-color:var(--ink-2)}
+  .day.next .dh .dd{font-size:15px;color:var(--ink)}
+  .flag{
+    font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;
+    padding:3px 8px;border-radius:99px;background:var(--ink);color:var(--plane);
+    align-self:center;
+  }
+  .day.next .flag{background:none;color:var(--ink-2);border:1px solid var(--rule)}
+  .day.now .slot{gap:9px}
+  .day.now .pill{box-shadow:var(--now-shadow), inset 0 0 0 1px rgba(255,255,255,.09)}
+  .day.now .top{padding:13px 16px}
+  .day.now .lbl{font-size:15px}
+
+  /* history: kept, but pushed back so it never competes with the live days */
+  .day.past{opacity:.42;transition:opacity .15s}
+  .day.past:hover,.day.past:focus-within{opacity:.9}
+  .hist{
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    color:var(--ink-muted);padding:2px 4px 8px;
+  }
+  .rule{border:0;border-top:1px solid var(--rule);margin:16px 0 18px}
+
+  /* ---------------- chip ---------------- */
+  /* the chip IS the bar: layer one paints the remainder grey from the
+     completion point rightward, layer two is the category fill underneath */
   .pill{
     --p:0%;
     border-radius:999px;overflow:hidden;
@@ -74,18 +110,14 @@
   .pill:hover{filter:brightness(1.06)}
   .pill.open{border-radius:18px}
 
-  .top{
-    display:flex;align-items:center;gap:10px;padding:11px 16px;
-    color:var(--on);cursor:pointer;
-  }
+  .top{display:flex;align-items:center;gap:10px;padding:11px 16px;
+       color:var(--on);cursor:pointer}
   /* shape carries the category as well as hue, so a solid chip is never
      identifiable by colour alone */
   .glyph{flex:none;font-size:10px;opacity:.8;width:11px;text-align:center}
   .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0;font-weight:500}
-  .pct{
-    flex:none;font-size:11.5px;font-weight:700;opacity:.9;
-    font-variant-numeric:tabular-nums;letter-spacing:.01em;
-  }
+  .pct{flex:none;font-size:11.5px;font-weight:700;opacity:.9;
+       font-variant-numeric:tabular-nums}
   .chev{flex:none;font-size:10px;opacity:.65;transition:transform .16s}
   .pill.open .chev{transform:rotate(90deg)}
 
@@ -93,92 +125,109 @@
   .pill.open .fold{display:block}
   .fold p{margin:0;font-size:12.5px;color:var(--ink-muted)}
   .fold ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-  .fold p + ul{margin-top:10px}
   .fold li{display:flex;gap:9px;font-size:13px;color:var(--ink-2)}
   .fold li::before{content:"–";color:var(--ink-muted);flex:none}
   .fold li.on{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
 </style>
 </head>
 <body>
-<div class="list" id="list"></div>
+<div class="wrap" id="wrap"></div>
 
 <script>
 /* ==========================================================
-   pct = completion, 0–100. cat = gw | admin | site | park
+   d   = the day it sits on ("" = no date, shown at the end)
+   pct = completion, 0-100
+   cat = gw | admin | site | park
    ========================================================== */
 const TASKS = [
-  {cat:"gw", pct:100, t:"Review the 291 suspect years",
-   note:"237 corrected, 20 kept, 34 held back. Deck live.",
-   sub:[["Diagnose and bucket",1],["Research every suspect",1],["Apply and upload",1]]},
+  {d:"2026-07-23", cat:"site", pct:100, t:"Studio site"},
+  {d:"2026-07-25", cat:"site", pct:100, t:"Well-drilling site"},
 
-  {cat:"gw", pct:100, t:"Deck quality sweep",
+  {d:"2026-08-08", cat:"gw", pct:100, t:"Review the 291 suspect years",
+   note:"237 corrected, 20 kept, 34 held back.",
+   sub:[["Diagnose and bucket",1],["Research every suspect",1],["Apply and upload",1]]},
+  {d:"2026-08-08", cat:"gw", pct:100, t:"Deck quality sweep",
    note:"73 categories and 56 fields corrected."},
 
-  {cat:"gw", pct:100, t:"Wrong-placement message fixes",
+  {d:"2026-08-09", cat:"gw", pct:100, t:"Wrong-placement message fixes",
    note:"Wrapping, timing and the -HP position.",
    sub:[["Wrap by width, not a newline",1],["Move -HP below the result",1],["Retime all three beats",1]]},
-
-  {cat:"gw", pct:100, t:"Expedition roguelite mode",
+  {d:"2026-08-09", cat:"gw", pct:100, t:"Expedition roguelite mode",
    note:"Map, routes, relics, boss, balance simulator."},
 
-  {cat:"gw", pct:0, t:"Push a build to the test track",
+  {d:"2026-08-10", cat:"gw", pct:0, t:"Push a build to the test track",
    note:"Store is on versionCode 9 while the working build is 21.",
    sub:[["Pick the build to promote",0],["Upload to closed test",0],["Confirm testers get it",0]]},
-
-  {cat:"gw", pct:0, t:"Rule the 79 held cards",
+  {d:"2026-08-10", cat:"gw", pct:0, t:"Rule the 79 held cards",
    note:"Phone work — read a card, make a call.",
    sub:[["34 wrong-title cards",0],["45 quality cards",0],["Hand rulings back",0]]},
+  {d:"2026-08-10", cat:"admin", pct:60, t:"Security housekeeping",
+   note:"ESTIMATE — 31 items left but the starting total was never recorded. Correct it.",
+   sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
 
-  {cat:"gw", pct:0, t:"Drag and prediction projection",
+  {d:"2026-08-11", cat:"gw", pct:0, t:"Fix store support-email typo"},
+  {d:"2026-08-11", cat:"gw", pct:0, t:"Drag and prediction projection",
    note:"Hard cutoff. If it isn't clearly better, ship what already works.",
    sub:[["Prototype the projection",0],["Play it on a phone",0],["Keep or revert",0]]},
 
-  {cat:"gw", pct:0, t:"Component placement",
+  {d:"2026-08-13", cat:"gw", pct:0, t:"Component placement",
    sub:[["Lay out the play area",0],["Check both screen widths",0]]},
 
-  {cat:"gw", pct:0, t:"Look and visual polish",
+  {d:"2026-08-14", cat:"gw", pct:0, t:"Look and visual polish",
    sub:[["Colour and spacing pass",0],["Lithuanian overflow check",0]]},
-
-  {cat:"gw", pct:0, t:"Test Expedition on non-trivia players",
+  {d:"2026-08-14", cat:"gw", pct:0, t:"Test Expedition on non-trivia players",
    note:"The bridge thesis. The testers written off as cosmetic are the only ones who can prove it.",
    sub:[["Get it to four of them",0],["Watch for unprompted play",0]]},
 
-  {cat:"gw", pct:0, t:"Multiplayer stress test",
+  {d:"2026-08-17", cat:"gw", pct:0, t:"Multiplayer stress test",
    note:"Book the people first — calendars are the long pole, not the code."},
 
-  {cat:"gw", pct:0, t:"Fix store support-email typo"},
-
-  {cat:"gw", pct:0, t:"Ship decision",
+  {d:"2026-08-29", cat:"gw", pct:0, t:"Ship decision",
    note:"Target the 29th. The 5th of September is the hard wall."},
-
-  {cat:"admin", pct:60, t:"Security housekeeping",
-   note:"ESTIMATE — 31 items left but the starting total was never recorded. Correct the number.",
-   sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
-
-  {cat:"admin", pct:0, t:"Monthly paperwork",
+  {d:"2026-08-31", cat:"admin", pct:0, t:"Give notice for the time away"},
+  {d:"2026-09-11", cat:"admin", pct:0, t:"Monthly paperwork",
    note:"Do it before leaving — the deadline lands mid-trip."},
 
-  {cat:"admin", pct:0, t:"Give notice for the time away"},
-
-  {cat:"site", pct:100, t:"Studio site"},
-  {cat:"site", pct:100, t:"Well-drilling site"},
-  {cat:"site", pct:90,  t:"Contact form activation",
+  {d:"", cat:"site", pct:90, t:"Contact form activation",
    note:"Everything else is live. Waiting on one sign-off."},
-
-  {cat:"park", pct:0, t:"Vector art tool",         note:"After the farm season."},
-  {cat:"park", pct:0, t:"European localisation",   note:"Post-launch."},
-  {cat:"park", pct:0, t:"Self-hosted card images", note:"Post-launch."}
+  {d:"", cat:"park", pct:0, t:"Vector art tool",         note:"After the farm season."},
+  {d:"", cat:"park", pct:0, t:"European localisation",   note:"Post-launch."},
+  {d:"", cat:"park", pct:0, t:"Self-hosted card images", note:"Post-launch."}
 ];
 
-const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
+const DAYNOTES = {
+  "2026-08-09":"shift night",
+  "2026-08-10":"desk day",
+  "2026-08-11":"desk day",
+  "2026-08-12":"shift night",
+  "2026-08-13":"desk day · rota out",
+  "2026-08-14":"desk day",
+  "2026-08-29":"ship decision",
+  "2026-09-05":"hard wall"
+};
+const HORIZON = 21;
 
-document.getElementById("list").innerHTML = TASKS.map((t,i) => {
+const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const pad = n => String(n).padStart(2,"0");
+const iso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d=parse(s); d.setDate(d.getDate()+n); return iso(d); };
+
+const TODAY = iso(new Date());
+const TOMORROW = addDays(TODAY,1);
+
+const byDay = {};
+for (const t of TASKS) (byDay[t.d] ||= []).push(t);
+
+function chip(t){
   const pct = Math.max(0, Math.min(100, t.pct));
-  // floored for PAINT only so a 0% task keeps a coloured cap and stays
+  // floored for PAINT only, so a 0% task keeps a coloured cap and stays
   // identifiable; the printed number is always the true value
   const paint = pct === 0 ? 12 : pct;
   const body = t.note || (t.sub && t.sub.length);
-  return '<article class="pill cat-' + t.cat + '" style="--p:' + paint + '%" data-i="' + i + '">' +
+  return '<article class="pill cat-' + t.cat + '" style="--p:' + paint + '%">' +
       '<div class="top">' +
         '<span class="glyph" aria-hidden="true">' + GLYPH[t.cat] + "</span>" +
         '<span class="lbl">' + t.t + "</span>" +
@@ -191,9 +240,44 @@ document.getElementById("list").innerHTML = TASKS.map((t,i) => {
           '<li class="' + (s[1] ? "on" : "") + '">' + s[0] + "</li>").join("") + "</ul>" : "") +
       "</div>" : "") +
     "</article>";
-}).join("");
+}
 
-document.getElementById("list").addEventListener("click", e => {
+function block(d, cls){
+  const dt = parse(d), note = DAYNOTES[d];
+  const flag = d === TODAY ? '<span class="flag">Today</span>'
+             : d === TOMORROW ? '<span class="flag">Tomorrow</span>' : "";
+  return '<section class="day ' + cls + '">' +
+    '<div class="dh">' +
+      '<span class="dd">' + dt.getDate() + " " + MO[dt.getMonth()] + "</span>" +
+      '<span class="dw">' + WD[dt.getDay()] + "</span>" + flag +
+      (note ? '<span class="note">' + note + "</span>" : "") +
+    "</div>" +
+    '<div class="slot">' + (byDay[d] || []).map(chip).join("") + "</div></section>";
+}
+
+/* history = only days that actually hold something. the future is a calendar,
+   the past is a log — rendering 200 empty past days would bury the live work */
+const past = Object.keys(byDay).filter(d => d && d < TODAY).sort();
+
+const future = new Set();
+for (let i = 0; i <= HORIZON; i++) future.add(addDays(TODAY,i));
+for (const d in byDay) if (d && d >= TODAY) future.add(d);
+for (const d in DAYNOTES) if (d >= TODAY) future.add(d);
+
+let html = "";
+if (past.length){
+  html += '<div class="hist">History</div>' +
+          past.map(d => block(d,"past")).join("") + '<hr class="rule">';
+}
+html += [...future].sort().map(d =>
+  block(d, d === TODAY ? "now" : d === TOMORROW ? "next" : "")).join("");
+
+if (byDay[""]) html += '<hr class="rule"><div class="hist">No date</div>' +
+  '<div class="slot">' + byDay[""].map(chip).join("") + "</div>";
+
+document.getElementById("wrap").innerHTML = html;
+
+document.getElementById("wrap").addEventListener("click", e => {
   const top = e.target.closest(".top");
   if (top && top.parentElement.querySelector(".fold")) top.parentElement.classList.toggle("open");
 });
