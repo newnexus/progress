@@ -80,6 +80,17 @@
   .day.now .top{padding:13px 16px}
   .day.now .lbl{font-size:15px}
 
+  /* a run of empty days collapses into one line — the timeline stays unbroken
+     without spending a whole block on each day that holds nothing */
+  .gap{
+    display:flex;align-items:baseline;gap:8px;
+    padding:7px 4px;margin-bottom:14px;
+    border-bottom:1px dashed var(--rule);
+    font-size:12px;color:var(--ink-muted);
+  }
+  .gap .r{font-weight:600;color:var(--ink-2)}
+  .gap .n{margin-left:auto;font-size:11px}
+
   /* history: kept, but pushed back so it never competes with the live days */
   .day.past{opacity:.42;transition:opacity .15s}
   .day.past:hover,.day.past:focus-within{opacity:.9}
@@ -259,18 +270,46 @@ function block(d, cls){
    the past is a log — rendering 200 empty past days would bury the live work */
 const past = Object.keys(byDay).filter(d => d && d < TODAY).sort();
 
+/* the future runs CONTINUOUSLY from today to the last thing on it, so every
+   day is either a block or inside a range row — no silent jumps */
+let last = addDays(TODAY, HORIZON);
+for (const d in byDay)   if (d && d > last) last = d;
+for (const d in DAYNOTES) if (d > last) last = d;
 const future = new Set();
-for (let i = 0; i <= HORIZON; i++) future.add(addDays(TODAY,i));
-for (const d in byDay) if (d && d >= TODAY) future.add(d);
-for (const d in DAYNOTES) if (d >= TODAY) future.add(d);
+for (let d = TODAY; d <= last; d = addDays(d,1)) future.add(d);
 
 let html = "";
 if (past.length){
   html += '<div class="hist">History</div>' +
           past.map(d => block(d,"past")).join("") + '<hr class="rule">';
 }
-html += [...future].sort().map(d =>
-  block(d, d === TODAY ? "now" : d === TOMORROW ? "next" : "")).join("");
+/* Consecutive days with nothing on them collapse into one range row. Today and
+   tomorrow never collapse — they hold their block even when empty, because an
+   empty today is itself worth seeing. */
+function rangeLabel(a,b){
+  const x = parse(a), y = parse(b);
+  const left = x.getDate() + (x.getMonth() === y.getMonth() ? "" : " " + MO[x.getMonth()]);
+  return a === b
+    ? x.getDate() + " " + MO[x.getMonth()]
+    : left + " – " + y.getDate() + " " + MO[y.getMonth()];
+}
+function gap(run){
+  const n = run.length;
+  return '<div class="gap"><span class="r">' + rangeLabel(run[0], run[n-1]) + "</span>" +
+    '<span>' + (n === 1 ? WD[parse(run[0]).getDay()] : n + " days") + "</span>" +
+    '<span class="n">clear</span></div>';
+}
+
+const days = [...future].sort();
+let run = [];
+for (const d of days){
+  const pinned = (d === TODAY || d === TOMORROW);
+  const empty  = !(byDay[d] || []).length && !DAYNOTES[d];
+  if (empty && !pinned){ run.push(d); continue; }
+  if (run.length){ html += gap(run); run = []; }
+  html += block(d, d === TODAY ? "now" : d === TOMORROW ? "next" : "");
+}
+if (run.length) html += gap(run);
 
 if (byDay[""]) html += '<hr class="rule"><div class="hist">No date</div>' +
   '<div class="slot">' + byDay[""].map(chip).join("") + "</div>";
