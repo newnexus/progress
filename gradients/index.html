@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Background gradients — Guess When</title>
+<meta name="description" content="Grainy, cloudy, shaded background candidates with PNG export.">
+<style>
+  :root{
+    color-scheme: dark;
+    --plane:#121211; --panel:#1c1c1a; --line:#2e2e2b;
+    --ink:#f2f2ef; --ink-2:#a9a8a1; --ink-3:#75746e;
+    --accent:#3987e5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);
+       font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px calc(60px + env(safe-area-inset-bottom))}
+  h1{font-size:18px;margin:0 0 4px;letter-spacing:-.01em}
+  .lead{color:var(--ink-3);font-size:12.5px;margin:0 0 18px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+         padding:14px 16px;margin-bottom:18px;position:sticky;top:0;z-index:10}
+  .row{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+  .ctl{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2)}
+  .ctl label{min-width:52px}
+  .ctl input[type=range]{width:116px;accent-color:var(--accent)}
+  .ctl output{min-width:28px;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+  select,button{background:#262623;color:var(--ink);border:1px solid var(--line);
+                border-radius:8px;padding:7px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+  button:hover,select:hover{border-color:#454540}
+  .hint{color:var(--ink-3);font-size:11.5px;margin-top:11px}
+
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .meta{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--line)}
+  .meta b{font-size:12.5px;font-weight:600;flex:1;min-width:0;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meta button{padding:5px 9px;font-size:11px}
+
+  /* ---- the stack ----
+     Blend modes carry no opacity of their own, so each quality is its OWN
+     layer with a real opacity. Paint order matches the PNG exporter exactly:
+     base ramp -> cloud -> vignette -> grain. */
+  .bg{position:relative;overflow:hidden;isolation:isolate;display:block;width:100%}
+  .sw{aspect-ratio:9/16;cursor:pointer}
+  .bg>i{position:absolute;inset:0;display:block;pointer-events:none}
+  .bg>i.cl{mix-blend-mode:soft-light;background-size:140% 140%;background-position:50% 30%}
+  .bg>i.gr{mix-blend-mode:overlay;background-size:170px 170px}
+  .bg.light>i.gr{mix-blend-mode:multiply}
+
+  #full{position:fixed;inset:0;z-index:100;display:none}
+  #full.on{display:block}
+  #full .bg{position:absolute;inset:0;height:100%}
+  #full .bar{position:absolute;left:0;right:0;bottom:0;padding:16px;z-index:5;
+             display:flex;gap:10px;align-items:center;
+             background:linear-gradient(0deg,rgba(0,0,0,.75),transparent)}
+  #full .nm{flex:1;font-size:14px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  /* a mock card, because a background is only ever judged with something on it */
+  #full .mock{
+    position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:4;
+    width:min(58vw,240px);aspect-ratio:3/4;border-radius:14px;
+    background:rgba(252,252,251,.94);box-shadow:0 18px 44px rgba(0,0,0,.45);
+    display:flex;flex-direction:column;justify-content:flex-end;padding:14px;
+    color:#14140f;font-size:12.5px;line-height:1.3;font-weight:600;
+  }
+  #full .mock i{position:static;display:block;font-style:normal;font-size:22px;
+                font-weight:700;margin-top:6px;inset:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Background gradients</h1>
+  <p class="lead">Tap a swatch for full screen with a card on it — a background is only ever judged with something in front of it. Sliders retune every swatch at once. Export bakes all three into a PNG.</p>
+
+  <div class="panel">
+    <div class="row">
+      <div class="ctl"><label for="g">Grain</label>
+        <input id="g" type="range" min="0" max="100" value="34"><output id="go">34</output></div>
+      <div class="ctl"><label for="c">Cloud</label>
+        <input id="c" type="range" min="0" max="100" value="46"><output id="co">46</output></div>
+      <div class="ctl"><label for="s">Shade</label>
+        <input id="s" type="range" min="0" max="100" value="52"><output id="so">52</output></div>
+      <div class="ctl"><label for="sz">Export</label>
+        <select id="sz">
+          <option value="1080x1920">1080 × 1920</option>
+          <option value="1440x2560" selected>1440 × 2560</option>
+          <option value="2160x3840">2160 × 3840</option>
+          <option value="1024x1024">1024 × 1024 tile</option>
+        </select></div>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="hint">Grain is fine per-pixel noise · cloud is large soft drift · shade is the vignette. The PNG regenerates all three at full resolution — the browser's SVG filters can't be drawn to canvas, so the exporter recreates them and matches the paint order.</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div id="full" role="dialog" aria-modal="true">
+  <div class="bg" id="fsbg"><i class="cl"></i><i class="vg"></i><i class="gr"></i></div>
+  <div class="mock">The first photograph is taken<i>1826</i></div>
+  <div class="bar"><span class="nm" id="fsnm"></span>
+    <button id="fsdl">Export PNG</button><button id="fsx">Close</button></div>
+</div>
+
+<script>
+/* a = top of the ramp, b = middle, c = bottom, tint = the cloud's colour.
+   light:1 flips grain to multiply so it darkens a pale ground instead of
+   blowing it out. */
+const PRESETS = [
+  {n:"Dusk Archive", a:"#1b2340", b:"#2f3c63", c:"#0d1120", tint:"#6f86c8"},
+  {n:"Ink Well",     a:"#0b0f16", b:"#161d2b", c:"#05070c", tint:"#4a6a9a"},
+  {n:"Twilight",     a:"#241a3d", b:"#3d2c60", c:"#120c22", tint:"#8f6fd0"},
+  {n:"Midnight Sea", a:"#07201f", b:"#123a3a", c:"#03100f", tint:"#37907f"},
+  {n:"Verdigris",    a:"#12312b", b:"#245046", c:"#081a16", tint:"#5aa88c"},
+  {n:"Bronze Age",   a:"#2a2413", b:"#4a3d1d", c:"#151206", tint:"#b08a3c"},
+  {n:"Ember",        a:"#241209", b:"#4a2410", c:"#120804", tint:"#d2703a"},
+  {n:"Oxblood",      a:"#2a0e14", b:"#4d1a23", c:"#14060a", tint:"#a63a4c"},
+  {n:"Slate Rain",   a:"#1e2328", b:"#39424a", c:"#0f1215", tint:"#7f95a6"},
+  {n:"Sandstone",    a:"#8a6b47", b:"#b89467", c:"#5c452c", tint:"#e0b784"},
+  {n:"Foxed Paper",  a:"#d9cdb2", b:"#f0e7d2", c:"#b8a684", tint:"#8a6f45", light:1},
+  {n:"Parchment",    a:"#e6dcc3", b:"#fbf5e6", c:"#c9b995", tint:"#9c7f4e", light:1}
+];
+
+const $ = id => document.getElementById(id);
+const G = () => +$("g").value/100, C = () => +$("c").value/100, S = () => +$("s").value/100;
+
+/* SVG turbulence as a data-URI. '#' must be encoded or the URL truncates at
+   the fragment; quotes are swapped to single so the whole thing can sit in a
+   double-quoted url(). */
+function noiseURL(freq, oct, size){
+  const svg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='"+size+"' height='"+size+"'>"+
+    "<filter id='n' x='0' y='0' width='100%' height='100%'>"+
+      "<feTurbulence type='fractalNoise' baseFrequency='"+freq+
+        "' numOctaves='"+oct+"' seed='7' stitchTiles='stitch'/>"+
+      "<feColorMatrix type='saturate' values='0'/>"+
+    "</filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>";
+  return 'url("data:image/svg+xml,' + svg.replace(/#/g,"%23") + '")';
+}
+const GRAIN = noiseURL(0.9,   3, 170);
+const CLOUD = noiseURL(0.006, 4, 700);
+
+function ramp(p){
+  return "linear-gradient(168deg," + p.a + " 0%," + p.b + " 46%," + p.c + " 100%)";
+}
+
+function paint(box, p){
+  box.classList.toggle("light", !!p.light);
+  box.style.background = ramp(p);
+  const cl = box.querySelector(".cl"), vg = box.querySelector(".vg"), gr = box.querySelector(".gr");
+  cl.style.backgroundImage = CLOUD;
+  cl.style.opacity = C().toFixed(3);
+  vg.style.background = "radial-gradient(120% 85% at 50% 34%, rgba(0,0,0,0) 38%, rgba(0,0,0," +
+                        (S()*0.72).toFixed(3) + ") 100%)";
+  gr.style.backgroundImage = GRAIN;
+  gr.style.opacity = (G()*0.62).toFixed(3);
+}
+
+/* ---------------- gallery ---------------- */
+const grid = $("grid");
+PRESETS.forEach((p,i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    '<div class="bg sw" data-i="'+i+'"><i class="cl"></i><i class="vg"></i><i class="gr"></i></div>' +
+    '<div class="meta"><b>'+p.n+'</b><button data-dl="'+i+'">PNG</button></div>';
+  grid.append(card);
+});
+
+function repaint(){
+  document.querySelectorAll(".sw").forEach(el => paint(el, PRESETS[+el.dataset.i]));
+  if ($("full").classList.contains("on")) paint($("fsbg"), PRESETS[current]);
+}
+["g","c","s"].forEach(id => $(id).addEventListener("input", () => {
+  $(id+"o").value = $(id).value; repaint();
+}));
+$("reset").addEventListener("click", () => {
+  [["g",34],["c",46],["s",52]].forEach(([id,v]) => { $(id).value=v; $(id+"o").value=v; });
+  repaint();
+});
+
+let current = 0;
+grid.addEventListener("click", e => {
+  const dl = e.target.closest("[data-dl]");
+  if (dl){ exportPNG(PRESETS[+dl.dataset.dl]); return; }
+  const sw = e.target.closest(".sw");
+  if (!sw) return;
+  current = +sw.dataset.i;
+  $("fsnm").textContent = PRESETS[current].n;
+  $("full").classList.add("on");
+  paint($("fsbg"), PRESETS[current]);
+});
+$("fsx").addEventListener("click", () => $("full").classList.remove("on"));
+$("fsdl").addEventListener("click", () => exportPNG(PRESETS[current]));
+addEventListener("keydown", e => { if (e.key === "Escape") $("full").classList.remove("on"); });
+
+/* ---------------- PNG export ----------------
+   Canvas can't run the SVG filters, so both noises are regenerated here:
+   grain per-pixel at full size, cloud as value-noise fBm rendered small and
+   scaled up — the browser's bilinear smoothing IS the interpolation. */
+const hex3 = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+
+function fbm(w,h,oct){
+  const out = new Float32Array(w*h);
+  let amp = 1, tot = 0, cells = 4;
+  for (let o = 0; o < oct; o++){
+    const gw = Math.max(2, Math.round(cells*w/h)) , gh = Math.max(2, cells);
+    const rnd = new Float32Array((gw+1)*(gh+1));
+    for (let i = 0; i < rnd.length; i++) rnd[i] = Math.random();
+    for (let y = 0; y < h; y++){
+      const fy = y/h*gh, y0 = Math.min(gh-1, Math.floor(fy)), ty = fy-y0, sy = ty*ty*(3-2*ty);
+      for (let x = 0; x < w; x++){
+        const fx = x/w*gw, x0 = Math.min(gw-1, Math.floor(fx)), tx = fx-x0, sx = tx*tx*(3-2*tx);
+        const a = rnd[y0*(gw+1)+x0],     b = rnd[y0*(gw+1)+x0+1];
+        const c = rnd[(y0+1)*(gw+1)+x0], d = rnd[(y0+1)*(gw+1)+x0+1];
+        const top = a+(b-a)*sx, bot = c+(d-c)*sx;
+        out[y*w+x] += amp*(top+(bot-top)*sy);
+      }
+    }
+    tot += amp; amp *= 0.5; cells *= 2;
+  }
+  for (let i = 0; i < out.length; i++) out[i] /= tot;
+  return out;
+}
+
+function exportPNG(p){
+  const [W,H] = $("sz").value.split("x").map(Number);
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+
+  // base ramp — 168deg measured the CSS way (0deg points up, clockwise)
+  const rad = (168-90)*Math.PI/180, dx = Math.cos(rad)*W, dy = Math.sin(rad)*H;
+  const lg = x.createLinearGradient(W/2-dx/2, H/2-dy/2, W/2+dx/2, H/2+dy/2);
+  lg.addColorStop(0,p.a); lg.addColorStop(.46,p.b); lg.addColorStop(1,p.c);
+  x.fillStyle = lg; x.fillRect(0,0,W,H);
+
+  // cloud
+  const c = C();
+  if (c > 0){
+    const sw = Math.max(48, Math.round(W/8)), sh = Math.max(48, Math.round(H/8));
+    const f = fbm(sw, sh, 4);
+    const oc = document.createElement("canvas"); oc.width = sw; oc.height = sh;
+    const ox = oc.getContext("2d"), oi = ox.createImageData(sw, sh);
+    const [tr,tg,tb] = hex3(p.tint);
+    for (let i = 0; i < f.length; i++){
+      const v = Math.max(0, Math.min(1, (f[i]-.42)*2.1+.5));
+      oi.data[i*4] = tr; oi.data[i*4+1] = tg; oi.data[i*4+2] = tb;
+      oi.data[i*4+3] = Math.round(v*255);
+    }
+    ox.putImageData(oi,0,0);
+    x.save();
+    x.globalAlpha = c; x.globalCompositeOperation = "soft-light";
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    x.drawImage(oc, 0, 0, W, H);
+    x.restore();
+  }
+
+  // vignette
+  const s = S();
+  if (s > 0){
+    const rg = x.createRadialGradient(W/2, H*0.34, Math.min(W,H)*0.20,
+                                      W/2, H*0.34, Math.max(W,H)*0.80);
+    rg.addColorStop(0,"rgba(0,0,0,0)");
+    rg.addColorStop(1,"rgba(0,0,0,"+(s*0.72).toFixed(3)+")");
+    x.fillStyle = rg; x.fillRect(0,0,W,H);
+  }
+
+  // grain last, matching the CSS stack order
+  const g = G();
+  if (g > 0){
+    const img = x.getImageData(0,0,W,H), d = img.data;
+    const amt = g*0.62*90, mul = !!p.light;
+    for (let i = 0; i < d.length; i += 4){
+      const n = mul ? -Math.random()*amt*0.6 : (Math.random()-.5)*amt;
+      d[i] += n; d[i+1] += n; d[i+2] += n;
+    }
+    x.putImageData(img,0,0);
+  }
+
+  cv.toBlob(b => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = "gw-bg-" + p.n.toLowerCase().replace(/\s+/g,"-") +
+      "-g"+$("g").value+"-c"+$("c").value+"-s"+$("s").value+"-"+W+"x"+H+".png";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, "image/png");
+}
+
+repaint();
+</script>
+</body>
+</html>
