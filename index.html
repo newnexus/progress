@@ -20,6 +20,7 @@
     --admin-a:#c1552b; --admin-b:#9e4623;
     --site-a:#15875e;  --site-b:#116f4d;
     --park-a:#767671;  --park-b:#61615d;
+    --rest:#4c4b47;    /* the not-yet-done part of a chip */
     --on:#fff;
     --drop:rgba(41,118,210,.09);
     --shadow:0 1px 2px rgba(11,11,11,.07);
@@ -34,6 +35,7 @@
       --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
       --grid:#2c2c2a; --rule:#3d3d39;
       --ring:rgba(255,255,255,.11);
+      --rest:#565550;
       --drop:rgba(57,135,229,.15);
       --shadow:none;
       --lift:0 10px 26px rgba(0,0,0,.65);
@@ -45,6 +47,7 @@
     --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
     --grid:#2c2c2a; --rule:#3d3d39;
     --ring:rgba(255,255,255,.11);
+    --rest:#565550;
     --drop:rgba(57,135,229,.15);
     --shadow:none;
     --lift:0 10px 26px rgba(0,0,0,.65);
@@ -109,11 +112,23 @@
   }
 
   /* ---------------- task pill ---------------- */
+  /* The chip IS the progress bar. Layer one paints the remainder grey from the
+     progress point rightward; layer two is the category fill underneath. So the
+     coloured part is what's done and the grey is what's left. --p is set inline
+     per task. A task with no subtasks has nothing to measure and stays 100%. */
   .pill{
+    --p:100%;
     border-radius:999px;overflow:hidden;box-shadow:var(--shadow);
-    background:linear-gradient(170deg,var(--a),var(--b));
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0) 0, rgba(0,0,0,0) var(--p),
+        var(--rest) var(--p), var(--rest) 100%),
+      linear-gradient(170deg,var(--a),var(--b));
     transition:border-radius .16s, box-shadow .12s, opacity .12s, filter .12s;
   }
+  /* keeps the chip edge readable on the dark plane, where the remainder grey
+     sits close to the background */
+  .pill:not(.done){box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.07)}
   .cat-gw   {--a:var(--gw-a);    --b:var(--gw-b)}
   .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
   .cat-site {--a:var(--site-a);  --b:var(--site-b)}
@@ -148,6 +163,8 @@
     font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;
     opacity:.75;flex:none;
   }
+  /* the count is the non-colour reading of the same progress */
+  .frac{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.85;flex:none}
   .chev{flex:none;font-size:10px;opacity:.7;transition:transform .16s}
   .pill.open .chev{transform:rotate(90deg)}
 
@@ -353,17 +370,31 @@ function isDone(t){
   return t.state === "done" || (sub.length > 0 && ST[t.id].sub.every(Boolean));
 }
 
+// ticked / total. no subtasks = nothing to measure, so the chip stays full colour.
+// the fill is floored at 12% so a task with nothing done keeps a coloured cap —
+// a literal 0% paints the whole chip grey and throws away its category. The
+// printed count is the honest number; the bar is the glance.
+function progress(t){
+  const n = (t.sub || []).length;
+  if (!n) return {n:0, hit:0, pct:100};
+  const hit = ST[t.id].sub.filter(Boolean).length;
+  return {n, hit, pct: Math.max(12, Math.round(hit / n * 100))};
+}
+
 function pillHTML(t){
   const s  = ST[t.id];
   const sub = t.sub || [];
   const state = isDone(t) ? "done" : t.state;
   const hot = (state === "now");
+  const p = progress(t);
   const label = STATES[state] || "";
   return '<div class="top">' +
       '<span class="grip" aria-label="Drag to another day">⠿</span>' +
       '<span class="glyph" aria-hidden="true">' + (GLYPH[t.cat] || "") + "</span>" +
       '<span class="lbl">' + t.t + "</span>" +
-      (label ? '<span class="st' + (hot ? " hot" : "") + '">' + label + "</span>" : "") +
+      (p.n && state !== "done"
+        ? '<span class="frac">' + p.hit + "/" + p.n + "</span>"
+        : label ? '<span class="st' + (hot ? " hot" : "") + '">' + label + "</span>" : "") +
       ((sub.length || t.note) ? '<span class="chev">▶</span>' : "") +
     "</div>" +
     ((sub.length || t.note) ?
@@ -392,14 +423,14 @@ function render(){
       "</div>" +
       '<div class="slot" data-d="' + d + '">' +
         (byDay[d] || []).map(t =>
-          '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+          '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" style="--p:' + progress(t).pct + '%" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
       "</div></section>";
   }
   // unscheduled bucket, always a valid drop target
   html += '<section class="day" data-d=""><div class="dh"><span class="dd">Unscheduled</span>' +
           '<span class="dw">no date yet</span></div>' +
           '<div class="slot" data-d="">' + (byDay[""] || []).map(t =>
-            '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+            '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" style="--p:' + progress(t).pct + '%" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
           "</div></section>";
 
   const open = [...document.querySelectorAll(".pill.open")].map(p => p.dataset.id);
