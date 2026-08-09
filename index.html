@@ -2,398 +2,553 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Progress — CandleLit Studio</title>
 <meta name="description" content="Task and schedule tracker.">
 <style>
   :root{
     color-scheme: light;
-    --plane:#f9f9f7; --surface:#fcfcfb;
+    --plane:#f9f9f7; --surface:#fcfcfb; --raise:#fff;
     --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
     --grid:#e1e0d9; --rule:#c3c2b7;
     --ring:rgba(11,11,11,.10);
-    --shift:#2a78d6;   /* slot 1 blue   */
-    --desk:#1baf7a;    /* slot 3 aqua   */
-    --key:#eb6834;     /* slot 2 orange */
-    --away:#b9b8b1;
-    --on-fill:#fff;
-    --shadow:0 1px 2px rgba(11,11,11,.05);
+    --c-gw:#2a78d6;      /* slot 1 blue   */
+    --c-site:#1baf7a;    /* slot 3 aqua   */
+    --c-admin:#eb6834;   /* slot 2 orange */
+    --c-park:#8d8c86;
+    --on:#fff;
+    --drop:rgba(42,120,214,.10);
+    --shadow:0 1px 2px rgba(11,11,11,.06);
+    --lift:0 8px 22px rgba(11,11,11,.22);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --plane:#0d0d0d; --surface:#1a1a19;
+      --plane:#0d0d0d; --surface:#1a1a19; --raise:#232321;
       --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#898781;
       --grid:#2c2c2a; --rule:#383835;
       --ring:rgba(255,255,255,.10);
-      --shift:#3987e5; --desk:#199e70; --key:#d95926;
-      --away:#4a4a46;
-      --on-fill:#fff;
+      --c-gw:#3987e5; --c-site:#199e70; --c-admin:#d95926; --c-park:#6e6d68;
+      --drop:rgba(57,135,229,.16);
       --shadow:none;
+      --lift:0 8px 22px rgba(0,0,0,.6);
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --plane:#0d0d0d; --surface:#1a1a19;
+    --plane:#0d0d0d; --surface:#1a1a19; --raise:#232321;
     --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#898781;
     --grid:#2c2c2a; --rule:#383835;
     --ring:rgba(255,255,255,.10);
-    --shift:#3987e5; --desk:#199e70; --key:#d95926;
-    --away:#4a4a46;
-    --on-fill:#fff;
+    --c-gw:#3987e5; --c-site:#199e70; --c-admin:#d95926; --c-park:#6e6d68;
+    --drop:rgba(57,135,229,.16);
     --shadow:none;
+    --lift:0 8px 22px rgba(0,0,0,.6);
   }
 
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html{scroll-behavior:smooth}
   body{
-    background:var(--plane); color:var(--ink);
-    font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+    margin:0;background:var(--plane);color:var(--ink);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
     -webkit-text-size-adjust:100%;
+    overscroll-behavior-y:none;
   }
-  .wrap{max-width:940px;margin:0 auto;padding:20px 16px 64px}
+  body.dragging{user-select:none;-webkit-user-select:none;touch-action:none}
+  .wrap{max-width:680px;margin:0 auto;padding:0 14px calc(80px + env(safe-area-inset-bottom))}
 
-  /* ---------- header ---------- */
-  header{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px}
-  h1{font-size:19px;line-height:1.25;margin:0;letter-spacing:-.01em}
-  .sub{color:var(--ink-muted);font-size:13px;margin-top:3px}
-  #theme{
-    margin-left:auto;flex:none;background:var(--surface);color:var(--ink-2);
-    border:1px solid var(--ring);border-radius:8px;padding:7px 10px;
-    font:inherit;font-size:13px;cursor:pointer;line-height:1;
+  /* ---------------- top bar ---------------- */
+  .bar{
+    position:sticky;top:0;z-index:40;background:var(--plane);
+    padding:14px 0 10px;border-bottom:1px solid var(--grid);
+    display:flex;align-items:center;gap:10px;
   }
-  #theme:hover{color:var(--ink)}
-
-  /* ---------- hero ---------- */
-  .hero{
-    background:var(--surface);border:1px solid var(--ring);border-radius:12px;
-    padding:16px 18px;margin-bottom:22px;box-shadow:var(--shadow);
-    display:flex;flex-wrap:wrap;gap:20px 32px;align-items:flex-end;
+  .bar h1{font-size:17px;margin:0;letter-spacing:-.01em;white-space:nowrap}
+  .bar .up{font-size:11.5px;color:var(--ink-muted);margin-left:2px}
+  .bar .sp{margin-left:auto}
+  .btn{
+    background:var(--surface);color:var(--ink-2);border:1px solid var(--ring);
+    border-radius:8px;padding:6px 10px;font:inherit;font-size:12.5px;
+    cursor:pointer;line-height:1;white-space:nowrap;
   }
-  .stat .n{font-size:34px;line-height:1;font-weight:650;letter-spacing:-.02em}
-  .stat .l{font-size:12px;color:var(--ink-muted);margin-top:5px;
-           text-transform:uppercase;letter-spacing:.06em}
-  .stat .n small{font-size:15px;font-weight:500;color:var(--ink-2);letter-spacing:0}
+  .btn:hover{color:var(--ink)}
 
-  h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;
-     color:var(--ink-muted);margin:0 0 12px;font-weight:600}
-  section{margin-bottom:30px}
+  .counts{display:flex;gap:14px;padding:11px 0 4px;font-size:12px;color:var(--ink-muted)}
+  .counts b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
 
-  /* ---------- calendar ---------- */
-  .months{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width:720px){.months{grid-template-columns:repeat(3,1fr)}}
-  .cal{background:var(--surface);border:1px solid var(--ring);
-       border-radius:12px;padding:14px;box-shadow:var(--shadow)}
-  .cal h3{font-size:14px;margin:0 0 10px;font-weight:600}
-  .dow,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .dow div{font-size:10px;color:var(--ink-muted);text-align:center;
-           padding-bottom:5px;font-weight:600}
-  .day{
-    position:relative;aspect-ratio:1;border-radius:7px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink-2);
-    background:transparent;
+  /* ---------------- day sections ---------------- */
+  .day{margin-top:6px;border-radius:12px;transition:background .12s}
+  .day.over{background:var(--drop)}
+  .day.away .dh .dd{color:var(--ink-muted)}
+
+  .dh{
+    position:sticky;top:52px;z-index:20;background:var(--plane);
+    display:flex;align-items:baseline;gap:8px;
+    padding:9px 6px 7px;border-bottom:1px solid var(--grid);
   }
-  .day.pad{visibility:hidden}
-  .day.shift{background:var(--shift);color:var(--on-fill);font-weight:600}
-  .day.desk {background:var(--desk); color:var(--on-fill);font-weight:600}
-  .day.key  {background:var(--key);  color:var(--on-fill);font-weight:600}
-  .day.away {background:var(--away); color:var(--ink-2)}
-  .day.today{outline:2px solid var(--ink);outline-offset:1px}
-  /* glyph = the secondary encoding, so colour never carries meaning alone */
-  .day[data-g]::after{
-    content:attr(data-g);position:absolute;top:1px;right:3px;
-    font-size:8px;line-height:1;opacity:.9;
+  .dh .dd{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+  .dh .dw{font-size:11.5px;color:var(--ink-muted)}
+  .dh .tag{
+    margin-left:auto;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:650;padding:2px 7px;border-radius:99px;border:1px solid var(--ring);
+    color:var(--ink-muted);
+  }
+  .dh .tag.shift{color:var(--c-gw);border-color:currentColor}
+  .dh .tag.desk {color:var(--c-site);border-color:currentColor}
+  .dh .tag.key  {color:var(--c-admin);border-color:currentColor}
+  .day.today .dh{border-bottom-color:var(--ink)}
+  .day.today .dh .dd::after{content:" · today";color:var(--ink-muted);font-weight:500;font-size:11.5px}
+
+  .slot{min-height:34px;padding:7px 4px 10px;display:flex;flex-direction:column;gap:7px}
+  .slot:empty::after{
+    content:"—";color:var(--ink-muted);opacity:.4;font-size:12px;padding:2px 4px;
   }
 
-  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px;font-size:12.5px;color:var(--ink-2)}
+  /* ---------------- task pill ---------------- */
+  .pill{
+    background:var(--surface);border:1px solid var(--ring);border-radius:999px;
+    box-shadow:var(--shadow);overflow:hidden;
+    transition:border-radius .16s, box-shadow .12s, opacity .12s;
+  }
+  .pill.open{border-radius:16px}
+  .pill.lifted{opacity:.35}
+  .pill.done .lbl{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
+
+  .top{
+    display:flex;align-items:center;gap:9px;padding:9px 13px;
+    cursor:grab;touch-action:pan-y;
+  }
+  /* the grip is the RELIABLE drag path: touch-action none means the browser
+     never steals the gesture for scrolling. Press-and-hold on the pill body
+     also works, but a fast vertical flick there scrolls instead — by design. */
+  .grip{
+    flex:none;margin:-9px 0 -9px -13px;padding:9px 6px 9px 13px;
+    color:var(--ink-muted);font-size:13px;line-height:1;cursor:grab;
+    touch-action:none;align-self:stretch;display:flex;align-items:center;
+  }
+  .grip:active{cursor:grabbing}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .cat-gw    .dot{background:var(--c-gw)}
+  .cat-site  .dot{background:var(--c-site)}
+  .cat-admin .dot{background:var(--c-admin)}
+  .cat-park  .dot{background:var(--c-park)}
+  .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0}
+  .st{
+    font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:650;
+    color:var(--ink-muted);flex:none;
+  }
+  .cat-gw    .st.hot{color:var(--c-gw)}
+  .cat-site  .st.hot{color:var(--c-site)}
+  .cat-admin .st.hot{color:var(--c-admin)}
+  .chev{flex:none;color:var(--ink-muted);font-size:10px;transition:transform .16s}
+  .pill.open .chev{transform:rotate(90deg)}
+
+  .fold{display:none;padding:2px 13px 11px 31px;border-top:1px solid var(--grid);margin-top:2px}
+  .pill.open .fold{display:block}
+  .fold ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+  .fold li{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--ink-2);cursor:pointer}
+  .fold li .box{
+    flex:none;width:15px;height:15px;border-radius:5px;border:1.5px solid var(--rule);
+    margin-top:1px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:transparent;line-height:1;
+  }
+  .fold li.on .box{background:var(--ink);border-color:var(--ink);color:var(--plane)}
+  .fold li.on span{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
+  .fold .meta{font-size:12px;color:var(--ink-muted);margin:0}
+
+  /* ---------------- ghost ---------------- */
+  #ghost{
+    position:fixed;z-index:100;pointer-events:none;left:0;top:0;
+    box-shadow:var(--lift);border-radius:999px;opacity:.97;
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 15px;padding:16px 4px 4px;font-size:12.5px;color:var(--ink-2)}
   .legend span{display:inline-flex;align-items:center;gap:6px}
-  .sw{width:11px;height:11px;border-radius:3px;flex:none}
+  .legend i{width:9px;height:9px;border-radius:50%}
 
-  /* ---------- dates ---------- */
-  .dates{background:var(--surface);border:1px solid var(--ring);
-         border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
-  .dates div{display:flex;gap:12px;padding:10px 14px;border-top:1px solid var(--grid);font-size:14px}
-  .dates div:first-child{border-top:0}
-  .dates b{flex:none;width:64px;color:var(--ink-muted);font-weight:500;
-           font-variant-numeric:tabular-nums;font-size:13px}
-  .dates em{font-style:normal;color:var(--ink)}
-  .dates .hot em{color:var(--key);font-weight:600}
-
-  /* ---------- tasks ---------- */
-  .group{margin-bottom:18px}
-  .group>h3{font-size:13px;margin:0 0 8px;font-weight:650;display:flex;align-items:center;gap:7px}
-  .pill{font-size:10px;letter-spacing:.06em;text-transform:uppercase;
-        border:1px solid var(--ring);border-radius:99px;padding:2px 7px;
-        color:var(--ink-muted);font-weight:600}
-  ul.t{list-style:none;margin:0;padding:0;background:var(--surface);
-       border:1px solid var(--ring);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
-  ul.t li{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--grid);align-items:baseline}
-  ul.t li:first-child{border-top:0}
-  .mark{flex:none;width:15px;text-align:center;font-size:12px;color:var(--ink-muted)}
-  .done .mark{color:var(--desk)}
-  .now  .mark{color:var(--key)}
-  .done .txt{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
-  .txt{flex:1}
-  .note{display:block;color:var(--ink-muted);font-size:12.5px;margin-top:1px}
-
-  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--grid);
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--grid);
          color:var(--ink-muted);font-size:12px}
-  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
-  th,td{text-align:left;padding:5px 10px 5px 0;border-bottom:1px solid var(--grid)}
-  th{color:var(--ink-muted);font-weight:600}
-  details{margin-top:14px}
-  summary{cursor:pointer;color:var(--ink-muted);font-size:12.5px}
-  /* readable by screen readers, invisible on screen — state is never colour-only */
-  .sr{position:absolute;width:1px;height:1px;overflow:hidden;
-      clip-path:inset(50%);white-space:nowrap}
+  #out{
+    width:100%;height:150px;margin-top:8px;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:var(--surface);color:var(--ink-2);border:1px solid var(--ring);
+    border-radius:8px;padding:9px;resize:vertical;
+  }
+  summary{cursor:pointer;font-size:12.5px}
+  .hint{padding:10px 4px 0;font-size:12.5px;color:var(--ink-muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<header>
-  <div>
+  <div class="bar">
     <h1>🕯️ Progress</h1>
-    <div class="sub" id="updated"></div>
+    <span class="up" id="up"></span>
+    <span class="sp"></span>
+    <button class="btn" id="today">Today</button>
+    <button class="btn" id="theme">Theme</button>
   </div>
-  <button id="theme" type="button">Theme</button>
-</header>
 
-<div class="hero">
-  <div class="stat"><div class="n" id="d1">—</div><div class="l">days to ship decision</div></div>
-  <div class="stat"><div class="n" id="d2">—</div><div class="l">days to the hard wall</div></div>
-  <div class="stat"><div class="n" id="d3">—</div><div class="l">tasks left this window</div></div>
-</div>
+  <div class="counts" id="counts"></div>
+  <div class="hint">Tap a task to open it. Press and hold to drag it to another day.</div>
 
-<section>
-  <h2>Schedule</h2>
-  <div class="months" id="cal"></div>
+  <div id="feed"></div>
+
   <div class="legend">
-    <span><i class="sw" style="background:var(--shift)"></i> ● Shift night</span>
-    <span><i class="sw" style="background:var(--desk)"></i> ▲ Desk day</span>
-    <span><i class="sw" style="background:var(--key)"></i> ◆ Key date</span>
-    <span><i class="sw" style="background:var(--away)"></i> Away</span>
+    <span><i style="background:var(--c-gw)"></i> Guess When</span>
+    <span><i style="background:var(--c-admin)"></i> Admin</span>
+    <span><i style="background:var(--c-site)"></i> Sites</span>
+    <span><i style="background:var(--c-park)"></i> Parked</span>
   </div>
-</section>
 
-<section>
-  <h2>Key dates</h2>
-  <div class="dates" id="dates"></div>
-</section>
-
-<section>
-  <h2>Tasks</h2>
-  <div id="tasks"></div>
-</section>
-
-<footer>
-  <div>Built from the SCHEDULER state files. Colour is paired with a glyph and a label throughout, so nothing depends on hue alone.</div>
-  <details>
-    <summary>Table view</summary>
-    <table id="tbl"><thead><tr><th>Task</th><th>Group</th><th>State</th></tr></thead><tbody></tbody></table>
-  </details>
-</footer>
-
+  <footer>
+    <div>Changes save on this device. Export to make them permanent.</div>
+    <details>
+      <summary>Export — paste over the <code>saved</code> line in index.html</summary>
+      <textarea id="out" readonly spellcheck="false"></textarea>
+      <button class="btn" id="copy" style="margin-top:8px">Copy</button>
+      <button class="btn" id="reset" style="margin-top:8px">Reset to file</button>
+    </details>
+  </footer>
 </div>
 
 <script>
-/* ============================================================
-   EDIT ONLY THIS BLOCK.
-   day types: shift | desk | key | away
-   task state: done | now | next | blocked | parked
-   ============================================================ */
+/* ==========================================================
+   EDIT THIS BLOCK
+   cat:   gw | admin | site | park
+   state: done | now | next | blocked
+   ========================================================== */
 const DATA = {
-  updated: "2026-08-09",
-  shipDate: "2026-08-29",
-  wallDate: "2026-09-05",
-  months: ["2026-08","2026-09","2026-10"],
-
-  days: {
-    "2026-08-08":"shift", "2026-08-09":"shift", "2026-08-12":"shift",
-    "2026-08-10":"desk",  "2026-08-11":"desk",  "2026-08-13":"desk",
-    "2026-08-14":"desk",
-    "2026-08-29":"key",   "2026-09-05":"key",   "2026-08-31":"key",
-    "2026-09-11":"key"
+  updated:"2026-08-09",
+  horizonDays:35,
+  dayTypes:{
+    "2026-08-09":"shift","2026-08-12":"shift",
+    "2026-08-10":"desk","2026-08-11":"desk","2026-08-13":"desk","2026-08-14":"desk",
+    "2026-08-29":"key","2026-08-31":"key","2026-09-05":"key","2026-09-11":"key"
   },
-  // inclusive ranges, applied before single days
-  ranges: [
-    { from:"2026-09-15", to:"2026-09-29", type:"away" },
-    { from:"2026-09-30", to:"2026-10-24", type:"away" }
-  ],
+  away:[{from:"2026-09-15",to:"2026-10-24"}],
+  notes:{
+    "2026-08-29":"Ship decision",
+    "2026-09-05":"Hard wall — last safe launch date",
+    "2026-09-15":"Greece",
+    "2026-08-13":"Rota out"
+  },
+  tasks:[
+    {id:"track", cat:"gw", d:"2026-08-10", state:"now", t:"Push a build to the test track",
+     note:"Store is on versionCode 9 while the working build is 21.",
+     sub:[["Pick the build to promote",false],["Upload to closed test",false],["Confirm testers get the update",false]]},
 
-  dates: [
-    { d:"2026-08-11", t:"Fix store support-email typo" },
-    { d:"2026-08-13", t:"Rota out — next week's shifts" },
-    { d:"2026-08-29", t:"Guess When — ship decision", hot:true },
-    { d:"2026-08-31", t:"Tell agency about the 5 weeks away" },
-    { d:"2026-09-05", t:"HARD WALL — last safe launch date", hot:true },
-    { d:"2026-09-11", t:"File August VAT before leaving" },
-    { d:"2026-09-15", t:"Greece — away 2 weeks" },
-    { d:"2026-09-29", t:"Farm season — away 4 weeks" },
-    { d:"2026-10-24", t:"Back at a desk" }
-  ],
+    {id:"cards", cat:"gw", d:"2026-08-10", state:"now", t:"Rule the 79 held cards",
+     note:"Phone work — read a card, make a call.",
+     sub:[["34 wrong-title cards",false],["45 quality cards",false],["Hand rulings back to be applied",false]]},
 
-  groups: [
-    { name:"Guess When — before launch", tasks:[
-      { s:"done", t:"291 suspect years reviewed", n:"237 corrected, deck live at v14" },
-      { s:"done", t:"Deck quality sweep", n:"73 categories + 56 fields" },
-      { s:"done", t:"Wrong-placement message fixes", n:"wrapping, timing, -HP position" },
-      { s:"done", t:"Expedition roguelite mode", n:"map, relics, boss, balance sim" },
-      { s:"now",  t:"Push a build to the test track", n:"store is 12 versions behind" },
-      { s:"now",  t:"Rule the 79 held cards", n:"34 titles + 45 quality" },
-      { s:"next", t:"Drag + prediction projection", n:"hard cutoff — then ship what works" },
-      { s:"next", t:"Component placement" },
-      { s:"next", t:"Look and visual polish" },
-      { s:"next", t:"Lithuanian overflow check" },
-      { s:"next", t:"Multiplayer stress test", n:"book the people first" },
-      { s:"next", t:"Fix store support-email typo" },
-      { s:"next", t:"Test Expedition on non-trivia players", n:"the bridge thesis" }
-    ]},
-    { name:"Admin", tasks:[
-      { s:"now",  t:"Security housekeeping" },
-      { s:"next", t:"Monthly paperwork" },
-      { s:"next", t:"Give notice for the time away" }
-    ]},
-    { name:"Live", tasks:[
-      { s:"done", t:"Studio site" },
-      { s:"done", t:"Well-drilling site" },
-      { s:"blocked", t:"Contact form activation", n:"waiting on sign-off" }
-    ]},
-    { name:"Parked", tasks:[
-      { s:"parked", t:"Vector art tool", n:"after the farm season" },
-      { s:"parked", t:"European localisation", n:"post-launch" },
-      { s:"parked", t:"Self-hosted card images", n:"post-launch" },
-      { s:"parked", t:"Solar", n:"blocked on paperwork" }
-    ]}
+    {id:"email", cat:"gw", d:"2026-08-11", state:"next", t:"Fix store support-email typo",
+     sub:[["Update the contact address",false]]},
+
+    {id:"drag", cat:"gw", d:"2026-08-11", state:"next", t:"Drag + prediction projection",
+     note:"Hard cutoff. If it isn't clearly better, ship what already works.",
+     sub:[["Prototype the projection",false],["Play it on a phone",false],["Keep or revert — decide",false]]},
+
+    {id:"place", cat:"gw", d:"2026-08-13", state:"next", t:"Component placement",
+     sub:[["Lay out the play area",false],["Check both screen widths",false]]},
+
+    {id:"look", cat:"gw", d:"2026-08-14", state:"next", t:"Look and visual polish",
+     sub:[["Colour and spacing pass",false],["Lithuanian overflow check",false]]},
+
+    {id:"expo", cat:"gw", d:"2026-08-14", state:"next", t:"Test Expedition on non-trivia players",
+     note:"The bridge thesis. The people written off as cosmetic testers are the only ones who can prove it.",
+     sub:[["Get it in front of four of them",false],["Watch whether they play unprompted",false]]},
+
+    {id:"mp", cat:"gw", d:"2026-08-17", state:"next", t:"Multiplayer stress test",
+     note:"Book the people first — calendars are the long pole, not the code.",
+     sub:[["Agree a time with two testers",false],["Run it on a near-final build",false]]},
+
+    {id:"ship", cat:"gw", d:"2026-08-29", state:"next", t:"Ship decision",
+     sub:[["Test window complete",false],["Content accuracy acceptable",false],["Go or slip — decide",false]]},
+
+    {id:"sec", cat:"admin", d:"2026-08-10", state:"now", t:"Security housekeeping",
+     sub:[["Finish the list",false],["Delete the originals",false],["Rotate the important ones",false]]},
+
+    {id:"paper", cat:"admin", d:"2026-09-11", state:"next", t:"Monthly paperwork",
+     note:"Do it before leaving — the deadline lands mid-trip."},
+
+    {id:"notice", cat:"admin", d:"2026-08-31", state:"next", t:"Give notice for the time away",
+     note:"Two weeks' notice needed for a five-week absence."},
+
+    {id:"form", cat:"site", d:"", state:"blocked", t:"Contact form activation",
+     note:"Waiting on someone else."},
+
+    {id:"vector", cat:"park", d:"", state:"next", t:"Vector art tool", note:"After the farm season."},
+    {id:"loc",    cat:"park", d:"", state:"next", t:"European localisation", note:"Post-launch."},
+    {id:"imgs",   cat:"park", d:"", state:"next", t:"Self-hosted card images", note:"Post-launch."}
   ]
 };
+
+/* Overwrite from Export to make dragged dates permanent. */
+const saved = null;
 /* ==================== END EDITABLE BLOCK ==================== */
 
-const GLYPH = { shift:"●", desk:"▲", key:"◆", away:"○" };
-const STATE = {
-  done:   { mark:"✓", label:"Done" },
-  now:    { mark:"▶", label:"In progress" },
-  next:   { mark:"○", label:"To do" },
-  blocked:{ mark:"✕", label:"Blocked" },
-  parked: { mark:"—", label:"Parked" }
-};
-const MONTH = ["January","February","March","April","May","June","July",
-               "August","September","October","November","December"];
+const KEY = "progress.v1";
+const CATS = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+const STATES = {done:"done", now:"now", next:"", blocked:"blocked"};
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const iso = d => d.toISOString().slice(0,10);
-const parse = s => new Date(s + "T00:00:00Z");
-const todayISO = iso(new Date());
+const pad = n => String(n).padStart(2,"0");
+const iso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d=parse(s); d.setDate(d.getDate()+n); return iso(d); };
+const TODAY = iso(new Date());
 
-// expand ranges into the day map (single days win — they're more specific)
-const dayMap = {};
-for (const r of DATA.ranges){
-  for (let d = parse(r.from); iso(d) <= r.to; d.setUTCDate(d.getUTCDate()+1)){
-    dayMap[iso(d)] = r.type;
+/* ---- state: file data, overlaid by saved, overlaid by localStorage ---- */
+function load(){
+  const base = {};
+  for (const t of DATA.tasks) base[t.id] = {d:t.d, sub:(t.sub||[]).map(s=>!!s[1])};
+  const apply = src => {
+    if (!src) return;
+    for (const id in src){
+      if (!base[id]) continue;
+      if (typeof src[id].d === "string") base[id].d = src[id].d;
+      if (Array.isArray(src[id].sub)) src[id].sub.forEach((v,i)=>{ if(i<base[id].sub.length) base[id].sub[i]=!!v; });
+    }
+  };
+  apply(saved);
+  try { apply(JSON.parse(localStorage.getItem(KEY) || "null")); } catch(e){}
+  return base;
+}
+let ST = load();
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch(e){} refreshExport(); };
+
+const isAway = d => DATA.away.some(r => d >= r.from && d <= r.to);
+
+/* ---- which days to render ---- */
+function dayList(){
+  const set = new Set();
+  const start = TODAY;
+  for (let i = 0; i <= DATA.horizonDays; i++) set.add(addDays(start,i));
+  for (const d in DATA.dayTypes) if (d >= start) set.add(d);
+  for (const d in DATA.notes)    if (d >= start) set.add(d);
+  // a task's own day is ALWAYS rendered, even once it falls into the past —
+  // otherwise the section disappears and takes the task with it
+  for (const id in ST) if (ST[id].d) set.add(ST[id].d);
+  return [...set].sort();
+}
+
+/* ---------------- render ---------------- */
+const feed = document.getElementById("feed");
+
+function pillHTML(t){
+  const s  = ST[t.id];
+  const sub = t.sub || [];
+  const doneAll = sub.length && s.sub.every(Boolean);
+  const state = doneAll ? "done" : t.state;
+  const hot = (state === "now");
+  const label = STATES[state] || "";
+  return '<div class="top">' +
+      '<span class="grip" aria-label="Drag to another day">⠿</span>' +
+      '<span class="dot"></span>' +
+      '<span class="lbl">' + t.t + "</span>" +
+      (label ? '<span class="st' + (hot ? " hot" : "") + '">' + label + "</span>" : "") +
+      ((sub.length || t.note) ? '<span class="chev">▶</span>' : "") +
+    "</div>" +
+    ((sub.length || t.note) ?
+      '<div class="fold">' +
+        (t.note ? '<p class="meta">' + t.note + "</p>" : "") +
+        (sub.length ? "<ul>" + sub.map((x,i) =>
+          '<li data-i="' + i + '" class="' + (s.sub[i] ? "on" : "") + '">' +
+            '<span class="box">✓</span><span>' + x[0] + "</span></li>").join("") + "</ul>" : "") +
+      "</div>" : "");
+}
+
+function render(){
+  const byDay = {};
+  for (const t of DATA.tasks) (byDay[ST[t.id].d || ""] ||= []).push(t);
+
+  let html = "";
+  for (const d of dayList()){
+    const dt = parse(d), type = DATA.dayTypes[d], away = isAway(d), note = DATA.notes[d];
+    html += '<section class="day' + (d===TODAY ? " today" : "") + (away ? " away" : "") +
+              '" data-d="' + d + '">' +
+      '<div class="dh">' +
+        '<span class="dd">' + dt.getDate() + " " + MO[dt.getMonth()] + "</span>" +
+        '<span class="dw">' + WD[dt.getDay()] + (note ? " · " + note : "") + "</span>" +
+        (type ? '<span class="tag ' + type + '">' + type + "</span>"
+              : away ? '<span class="tag">away</span>' : "") +
+      "</div>" +
+      '<div class="slot" data-d="' + d + '">' +
+        (byDay[d] || []).map(t =>
+          '<article class="pill cat-' + t.cat + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+      "</div></section>";
+  }
+  // unscheduled bucket, always a valid drop target
+  html += '<section class="day" data-d=""><div class="dh"><span class="dd">Unscheduled</span>' +
+          '<span class="dw">no date yet</span></div>' +
+          '<div class="slot" data-d="">' + (byDay[""] || []).map(t =>
+            '<article class="pill cat-' + t.cat + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+          "</div></section>";
+
+  const open = [...document.querySelectorAll(".pill.open")].map(p => p.dataset.id);
+  feed.innerHTML = html;
+  for (const id of open){
+    const p = feed.querySelector('.pill[data-id="' + id + '"]');
+    if (p) p.classList.add("open");
+  }
+  counts();
+}
+
+function counts(){
+  let open = 0, done = 0;
+  for (const t of DATA.tasks){
+    const s = ST[t.id], sub = t.sub || [];
+    const isDone = (sub.length && s.sub.every(Boolean)) || t.state === "done";
+    isDone ? done++ : open++;
+  }
+  const toShip = Math.round((parse("2026-08-29") - parse(TODAY)) / 86400000);
+  document.getElementById("counts").innerHTML =
+    "<span><b>" + open + "</b> open</span><span><b>" + done + "</b> done</span>" +
+    "<span><b>" + (toShip > 0 ? toShip : 0) + "</b> days to ship decision</span>";
+}
+
+document.getElementById("up").textContent = "updated " + DATA.updated;
+
+/* ---------------- tap: foldout + subtask ---------------- */
+feed.addEventListener("click", e => {
+  if (suppressClick){ suppressClick = false; return; }
+  const li = e.target.closest(".fold li");
+  if (li){
+    const id = li.closest(".pill").dataset.id, i = +li.dataset.i;
+    ST[id].sub[i] = !ST[id].sub[i];
+    persist(); render();
+    return;
+  }
+  const top = e.target.closest(".top");
+  if (top) top.parentElement.classList.toggle("open");
+});
+
+/* ---------------- press-and-hold to drag ---------------- */
+let drag = null, suppressClick = false, raf = 0;
+const HOLD = 220, SLOP = 10;
+
+feed.addEventListener("pointerdown", e => {
+  const top = e.target.closest(".top");
+  if (!top || (e.pointerType === "mouse" && e.button !== 0)) return;
+  const pill = top.parentElement;
+  const start = {x:e.clientX, y:e.clientY};
+  let armed = true;
+
+  // the grip commits immediately; the pill body waits out the hold so a
+  // flick still scrolls the page
+  if (e.target.closest(".grip")){ begin(pill, e, start); return; }
+
+  const timer = setTimeout(() => {
+    if (!armed) return;
+    begin(pill, e, start);
+  }, HOLD);
+
+  const cancel = () => { armed = false; clearTimeout(timer);
+    window.removeEventListener("pointermove", watch);
+    window.removeEventListener("pointerup", cancel);
+    window.removeEventListener("pointercancel", cancel); };
+
+  const watch = ev => {
+    if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) > SLOP) cancel(); // it's a scroll
+  };
+  window.addEventListener("pointermove", watch, {passive:true});
+  window.addEventListener("pointerup", cancel, {passive:true});
+  window.addEventListener("pointercancel", cancel, {passive:true});
+});
+
+function begin(pill, e, start){
+  const r = pill.getBoundingClientRect();
+  const ghost = pill.cloneNode(true);
+  ghost.id = "ghost";
+  ghost.classList.remove("open");
+  ghost.style.width = r.width + "px";
+  document.body.append(ghost);
+  pill.classList.add("lifted");
+  document.body.classList.add("dragging");
+  if (navigator.vibrate) navigator.vibrate(12);
+
+  drag = {pill, ghost, dx:start.x - r.left, dy:start.y - r.top, y:start.y, target:null};
+  move(start.x, start.y);
+
+  window.addEventListener("pointermove", onMove, {passive:false});
+  window.addEventListener("pointerup", onUp, {passive:true});
+  window.addEventListener("pointercancel", onUp, {passive:true});
+  raf = requestAnimationFrame(edgeScroll);
+}
+
+function move(x,y){
+  drag.ghost.style.transform = "translate(" + (x-drag.dx) + "px," + (y-drag.dy) + "px)";
+  drag.y = y;
+  drag.ghost.style.visibility = "hidden";
+  const el = document.elementFromPoint(x, y);
+  drag.ghost.style.visibility = "";
+  const sec = el && el.closest(".day");
+  if (sec !== drag.target){
+    if (drag.target) drag.target.classList.remove("over");
+    drag.target = sec;
+    if (sec) sec.classList.add("over");
   }
 }
-Object.assign(dayMap, DATA.days);
+function onMove(e){ e.preventDefault(); move(e.clientX, e.clientY); }
 
-function daysBetween(a,b){
-  return Math.round((parse(b) - parse(a)) / 86400000);
+function edgeScroll(){
+  if (!drag) return;
+  const h = innerHeight, EDGE = 90;
+  if (drag.y < EDGE)          scrollBy(0, -Math.ceil((EDGE - drag.y)/5));
+  else if (drag.y > h - EDGE) scrollBy(0,  Math.ceil((drag.y - (h - EDGE))/5));
+  raf = requestAnimationFrame(edgeScroll);
 }
 
-/* ---- hero ---- */
-function setStat(id, n, unit){
-  const el = document.getElementById(id);
-  el.textContent = n;
-  if (unit){ const s = document.createElement("small"); s.textContent = " " + unit; el.append(s); }
-}
-const toShip = daysBetween(todayISO, DATA.shipDate);
-const toWall = daysBetween(todayISO, DATA.wallDate);
-setStat("d1", toShip > 0 ? toShip : 0);
-setStat("d2", toWall > 0 ? toWall : 0);
-const openCount = DATA.groups
-  .flatMap(g => g.tasks)
-  .filter(t => t.s === "now" || t.s === "next").length;
-setStat("d3", openCount);
-document.getElementById("updated").textContent = "Updated " + DATA.updated;
+function onUp(){
+  if (!drag) return;
+  cancelAnimationFrame(raf);
+  window.removeEventListener("pointermove", onMove);
+  window.removeEventListener("pointerup", onUp);
+  window.removeEventListener("pointercancel", onUp);
 
-/* ---- calendar ---- */
-const calEl = document.getElementById("cal");
-for (const m of DATA.months){
-  const [y, mo] = m.split("-").map(Number);
-  const first = new Date(Date.UTC(y, mo-1, 1));
-  const total = new Date(Date.UTC(y, mo, 0)).getUTCDate();
-  const lead  = (first.getUTCDay() + 6) % 7;          // Monday-first
+  const to = drag.target ? drag.target.dataset.d : null;
+  const id = drag.pill.dataset.id;
+  drag.ghost.remove();
+  drag.pill.classList.remove("lifted");
+  if (drag.target) drag.target.classList.remove("over");
+  document.body.classList.remove("dragging");
+  drag = null;
+  suppressClick = true;
+  setTimeout(() => suppressClick = false, 60);
 
-  const box = document.createElement("div");
-  box.className = "cal";
-  box.innerHTML = "<h3>" + MONTH[mo-1] + " " + y + "</h3>" +
-    '<div class="dow"><div>M</div><div>T</div><div>W</div><div>T</div>' +
-    '<div>F</div><div>S</div><div>S</div></div>';
-
-  const grid = document.createElement("div");
-  grid.className = "days";
-  for (let i = 0; i < lead; i++){
-    const p = document.createElement("div");
-    p.className = "day pad"; p.textContent = "0";
-    grid.append(p);
-  }
-  for (let n = 1; n <= total; n++){
-    const key  = y + "-" + String(mo).padStart(2,"0") + "-" + String(n).padStart(2,"0");
-    const type = dayMap[key];
-    const cell = document.createElement("div");
-    cell.className = "day" + (type ? " " + type : "") + (key === todayISO ? " today" : "");
-    cell.textContent = n;
-    if (type && GLYPH[type]) cell.setAttribute("data-g", GLYPH[type]);
-    const hit = DATA.dates.find(x => x.d === key);
-    cell.title = key + (hit ? " — " + hit.t : type ? " — " + type : "");
-    grid.append(cell);
-  }
-  box.append(grid);
-  calEl.append(box);
+  if (to !== null && to !== ST[id].d){ ST[id].d = to; persist(); render(); }
 }
 
-/* ---- key dates ---- */
-document.getElementById("dates").innerHTML = DATA.dates.map(x => {
-  const d = parse(x.d);
-  const lbl = d.getUTCDate() + " " + MONTH[d.getUTCMonth()].slice(0,3);
-  return '<div class="' + (x.hot ? "hot" : "") + '"><b>' + lbl + "</b><em>" + x.t + "</em></div>";
-}).join("");
-
-/* ---- tasks ---- */
-const tasksEl = document.getElementById("tasks");
-const tbody   = document.querySelector("#tbl tbody");
-for (const g of DATA.groups){
-  const left = g.tasks.filter(t => t.s === "now" || t.s === "next").length;
-  const wrap = document.createElement("div");
-  wrap.className = "group";
-  wrap.innerHTML = "<h3>" + g.name +
-    '<span class="pill">' + (left ? left + " left" : "clear") + "</span></h3>";
-
-  const ul = document.createElement("ul");
-  ul.className = "t";
-  for (const t of g.tasks){
-    const st = STATE[t.s] || STATE.next;
-    const li = document.createElement("li");
-    li.className = t.s;
-    li.innerHTML = '<span class="mark" aria-hidden="true">' + st.mark + "</span>" +
-      '<span class="txt">' + t.t +
-      (t.n ? '<span class="note">' + t.n + "</span>" : "") +
-      '<span class="sr"> — ' + st.label + "</span></span>";
-    ul.append(li);
-
-    const row = document.createElement("tr");
-    row.innerHTML = "<td>" + t.t + "</td><td>" + g.name + "</td><td>" + st.label + "</td>";
-    tbody.append(row);
-  }
-  wrap.append(ul);
-  tasksEl.append(wrap);
+/* ---------------- export ---------------- */
+function refreshExport(){
+  const o = {};
+  for (const id in ST) o[id] = {d:ST[id].d, sub:ST[id].sub};
+  document.getElementById("out").value = "const saved = " + JSON.stringify(o) + ";";
 }
+document.getElementById("copy").addEventListener("click", async () => {
+  const ta = document.getElementById("out");
+  try { await navigator.clipboard.writeText(ta.value); }
+  catch(e){ ta.select(); document.execCommand("copy"); }
+  const b = document.getElementById("copy"); b.textContent = "Copied"; setTimeout(()=>b.textContent="Copy",1200);
+});
+document.getElementById("reset").addEventListener("click", () => {
+  localStorage.removeItem(KEY); ST = load(); render(); refreshExport();
+});
 
-/* ---- theme toggle ---- */
-const btn = document.getElementById("theme");
-btn.addEventListener("click", () => {
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
-  const cur  = document.documentElement.getAttribute("data-theme") || (dark ? "dark" : "light");
+/* ---------------- chrome ---------------- */
+document.getElementById("theme").addEventListener("click", () => {
+  const sysDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = document.documentElement.getAttribute("data-theme") || (sysDark ? "dark" : "light");
   document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
 });
+document.getElementById("today").addEventListener("click", () => {
+  const el = document.querySelector(".day.today");
+  if (el) el.scrollIntoView({block:"start"});
+});
+
+render();
+refreshExport();
 </script>
 </body>
 </html>
