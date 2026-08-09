@@ -112,6 +112,26 @@
   .sz-major    .lbl{font-size:15.5px;font-weight:600}
   .sz-minor    .lbl{font-size:13.5px}
 
+  /* A PROCESS has no finish, so its bar cannot mean completion. The stripes
+     say "this cycles" at a glance, and the filled part is how far through the
+     current cycle it is — full means due. Same grammar, different meaning. */
+  .pill.proc{
+    background:
+      repeating-linear-gradient(115deg,
+        var(--rest) 0 6px, rgba(255,255,255,.045) 6px 12px) var(--p) 0 / 100% no-repeat,
+      linear-gradient(90deg,
+        rgba(0,0,0,0) 0, rgba(0,0,0,0) var(--p),
+        var(--rest) var(--p), var(--rest) 100%),
+      linear-gradient(170deg,var(--a),var(--b));
+  }
+  .pill.proc .cyc{
+    flex:none;font-size:10.5px;font-weight:700;opacity:.85;
+    letter-spacing:.02em;white-space:nowrap;
+  }
+  .pill.proc.due  .cyc{opacity:1}
+  .pill.proc.over .cyc{background:var(--on);color:var(--rest);
+    padding:2px 7px;border-radius:99px;opacity:1}
+
   .glyph{flex:none;font-size:10px;opacity:.8;width:11px;text-align:center}
   .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0;font-weight:500;padding:9px 0}
   .pct{flex:none;font-size:11.5px;font-weight:700;opacity:.9;font-variant-numeric:tabular-nums}
@@ -262,9 +282,6 @@ const TASKS = [
   {id:"notice", d:"2026-08-31", cat:"admin", pct:0, size:"minor", t:"Give notice for the time away",
    done:"The agency knows, two weeks ahead."},
 
-  {id:"paper", d:"2026-09-11", cat:"admin", pct:0, size:"minor", t:"Monthly paperwork",
-   done:"Filed before leaving — the deadline lands mid-trip."},
-
   {id:"form", d:"", cat:"site", pct:90, size:"minor", t:"Contact form activation",
    done:"A message sent from the site arrives.",
    note:"Everything else is live. Waiting on one sign-off."},
@@ -275,6 +292,41 @@ const TASKS = [
    done:"—", note:"Post-launch. Ten locales on content that keeps moving is double work.", needs:["cards"]},
   {id:"imgs", d:"", cat:"park", pct:0, size:"moderate", t:"Self-hosted card images",
    done:"—", note:"Post-launch. Only pre-launch action: confirm cards store an image PATH, not a full URL."}
+];
+
+/* ==========================================================
+   PROCESSES — work with no finish. No pct and no "done when";
+   they are measured by RECENCY instead.
+     every   the rhythm, as a label
+     last    when it last happened
+     next    when it is next due ("" = continuous, no due date)
+     from    "launch" = does not start until the game ships
+   ========================================================== */
+const PROCESSES = [
+  {id:"reviews", cat:"gw", size:"moderate", t:"Reply to store reviews",
+   every:"continuous", last:"", next:"", from:"launch",
+   healthy:"No review sits more than a couple of days without a reply.",
+   note:"Starts the day it goes to production. Early reviews carry the most weight and are the cheapest to answer."},
+
+  {id:"events", cat:"gw", size:"major", t:"Run seasonal events",
+   every:"per season", last:"", next:"", from:"launch",
+   healthy:"Something new to come back for, on a rhythm players can predict.",
+   note:"Live-ops. The reason a returning player has a reason. Not before launch."},
+
+  {id:"pass", cat:"gw", size:"major", t:"Battlepass cycles",
+   every:"per season", last:"", next:"", from:"launch",
+   healthy:"A cycle never ends without the next one ready.",
+   note:"A dead pass between seasons is worse than no pass. Only worth starting once retention justifies it."},
+
+  {id:"rota", cat:"admin", size:"minor", t:"Check the rota",
+   every:"weekly · Thursdays", last:"2026-08-06", next:"2026-08-13",
+   healthy:"Shifts known for the week ahead, and told to the manager.",
+   note:"Issued Thursday evening. Bills minimum is two shifts a week — missing the rota is how a week quietly goes under."},
+
+  {id:"paper", cat:"admin", size:"minor", t:"Monthly paperwork",
+   every:"monthly", last:"2026-08-06", next:"2026-09-10",
+   healthy:"Filed every month, including the empty ones. The penalty is for not filing, not for the amount.",
+   note:"⚠ The one after next lands mid-trip — file it before leaving."}
 ];
 
 const DAYNOTES = {
@@ -296,7 +348,24 @@ const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>
 
 const TODAY = iso(new Date());
 const TOMORROW = addDays(TODAY,1);
-const BY_ID = Object.fromEntries(TASKS.map(t => [t.id,t]));
+const BY_ID = Object.fromEntries([...TASKS, ...PROCESSES].map(t => [t.id,t]));
+const IS_PROC = Object.fromEntries(PROCESSES.map(p => [p.id,true]));
+const days = (a,b) => Math.round((parse(b) - parse(a)) / 86400000);
+
+/* A process is judged on recency, not completion. The bar shows how far
+   through the current cycle it is: full means due now. */
+function procState(p){
+  if (p.from === "launch") return {label:"at launch", pct:0, cls:"", when:"Not started"};
+  if (!p.next) return {label:"ongoing", pct:100, cls:"", when:"Continuous"};
+  const left = days(TODAY, p.next);
+  const span = p.last ? Math.max(1, days(p.last, p.next)) : 1;
+  const pct  = Math.max(0, Math.min(100, Math.round((span - left) / span * 100)));
+  if (left < 0)  return {label:"overdue " + (-left) + "d", pct:100, cls:"over",
+                         when:"Overdue by " + (-left) + " days"};
+  if (left === 0) return {label:"due today", pct:100, cls:"due", when:"Due today"};
+  return {label:"due in " + left + "d", pct, cls: left <= 2 ? "due" : "",
+          when:"Due in " + left + " days"};
+}
 // "blocks" is the inverse of needs — derived, so the two can never disagree
 const BLOCKS = {};
 for (const t of TASKS) for (const n of (t.needs||[])) (BLOCKS[n] ||= []).push(t.id);
@@ -304,6 +373,16 @@ for (const t of TASKS) for (const n of (t.needs||[])) (BLOCKS[n] ||= []).push(t.
 const paintPct = p => p === 0 ? 12 : Math.max(0, Math.min(100,p));
 
 function chip(t){
+  if (IS_PROC[t.id]){
+    const s = procState(t);
+    return '<article class="pill proc ' + s.cls + " cat-" + t.cat + " sz-" + t.size +
+             '" style="--p:' + s.pct + '%"><div class="top">' +
+        '<span class="glyph" aria-hidden="true">↻</span>' +
+        '<span class="lbl">' + esc(t.t) + "</span>" +
+        '<span class="cyc">' + s.label + "</span>" +
+        '<a class="go" href="#/t/' + t.id + '" aria-label="Open ' + esc(t.t) + '">›</a>' +
+      "</div></article>";
+  }
   const pct = Math.max(0, Math.min(100, t.pct));
   return '<article class="pill cat-' + t.cat + " sz-" + t.size +
            '" style="--p:' + paintPct(pct) + '%">' +
@@ -362,6 +441,15 @@ function listView(){
 
   if (byDay[""]) html += '<hr class="rule"><div class="hist">No date</div>' +
     '<div class="slot">' + byDay[""].map(chip).join("") + "</div>";
+
+  /* Processes sit below the timeline rather than on a day — they are not
+     scheduled, they are kept up. Overdue and due-soon float to the top of
+     their own section so upkeep slipping is still visible. */
+  const rank = p => { const s = procState(p);
+    return s.cls === "over" ? 0 : s.cls === "due" ? 1 : p.from === "launch" ? 3 : 2; };
+  const ongoing = PROCESSES.slice().sort((a,b) => rank(a) - rank(b));
+  html += '<hr class="rule"><div class="hist">Ongoing · no finish</div>' +
+          '<div class="slot">' + ongoing.map(chip).join("") + "</div>";
   return html;
 }
 
@@ -377,7 +465,40 @@ function depChip(id){
     '<a class="go" href="#/t/' + t.id + '">›</a></div></article>';
 }
 
+function processView(p){
+  const s = procState(p);
+  const sec = (title, inner, flush) =>
+    '<div class="sec"><h2>' + title + '</h2>' +
+    (flush ? '<div class="card pad0">' + inner + "</div>" : inner) + "</div>";
+
+  let h = '<a class="back" href="#/">‹ All tasks</a>' +
+    '<div class="cat-' + p.cat + '">' +
+    '<h1 class="dtitle">' + esc(p.t) + "</h1>" +
+    '<div class="dmeta">' +
+      '<span class="tag fill">↻ Process</span>' +
+      '<span class="tag">' + esc(p.every) + "</span>" +
+      '<span class="tag">' + p.size + "</span>" +
+      '<span class="tag">' + s.when + "</span>" +
+    "</div>" +
+    '<div class="bar"><i style="width:' + s.pct + '%"></i></div>' +
+    "</div>";
+
+  // no "done when" — a process cannot be finished, only kept up
+  if (p.healthy) h += sec("Healthy when", '<div class="card">' + esc(p.healthy) + "</div>");
+  if (p.note)    h += sec("Why", '<div class="card">' + esc(p.note) + "</div>");
+
+  h += sec("Rhythm", '<div class="log">' +
+    "<div><b>Every</b>" + esc(p.every) + "</div>" +
+    "<div><b>Last</b>" + (p.last ? p.last + " · " + days(p.last, TODAY) + " days ago"
+                                 : "never") + "</div>" +
+    "<div><b>Next</b>" + (p.from === "launch" ? "when the game ships"
+                          : p.next || "no fixed date — it just runs") + "</div>" +
+    "</div>", true);
+  return h;
+}
+
 function detailView(t){
+  if (IS_PROC[t.id]) return processView(t);
   const when = t.d
     ? (t.d === TODAY ? "Today" : t.d === TOMORROW ? "Tomorrow"
        : WD[parse(t.d).getDay()] + " " + parse(t.d).getDate() + " " + MO[parse(t.d).getMonth()])
