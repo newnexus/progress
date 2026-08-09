@@ -6,44 +6,48 @@
 <title>Progress — CandleLit Studio</title>
 <meta name="description" content="Task and schedule tracker.">
 <style>
+  /* Fills are darkened steps of the validated hues, chosen so WHITE LABEL TEXT
+     clears 4.5:1 at the LIGHTEST end of each gradient — the bright base hues
+     would have failed it (aqua sat near 2.6:1). They still clear 4:1 against
+     both page surfaces and pass all-pairs colourblind separation. */
   :root{
     color-scheme: light;
-    --plane:#f9f9f7; --surface:#fcfcfb; --raise:#fff;
-    --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
-    --grid:#e1e0d9; --rule:#c3c2b7;
-    --ring:rgba(11,11,11,.10);
-    --c-gw:#2a78d6;      /* slot 1 blue   */
-    --c-site:#1baf7a;    /* slot 3 aqua   */
-    --c-admin:#eb6834;   /* slot 2 orange */
-    --c-park:#8d8c86;
+    --plane:#fbfbfa; --surface:#fff; --raise:#fff;
+    --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#8a8983;
+    --grid:#ececea; --rule:#cfcecb;
+    --ring:rgba(11,11,11,.09);
+    --gw-a:#2976d2;    --gw-b:#2261ac;
+    --admin-a:#c1552b; --admin-b:#9e4623;
+    --site-a:#15875e;  --site-b:#116f4d;
+    --park-a:#767671;  --park-b:#61615d;
     --on:#fff;
-    --drop:rgba(42,120,214,.10);
-    --shadow:0 1px 2px rgba(11,11,11,.06);
-    --lift:0 8px 22px rgba(11,11,11,.22);
+    --drop:rgba(41,118,210,.09);
+    --shadow:0 1px 2px rgba(11,11,11,.07);
+    --lift:0 10px 26px rgba(11,11,11,.26);
   }
+  /* Dark keeps the SAME fills — they clear 4.05:1 against the dark plane, so a
+     chip still reads as a chip and the white label stays legible in both modes. */
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --plane:#0d0d0d; --surface:#1a1a19; --raise:#232321;
-      --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#898781;
-      --grid:#2c2c2a; --rule:#383835;
-      --ring:rgba(255,255,255,.10);
-      --c-gw:#3987e5; --c-site:#199e70; --c-admin:#d95926; --c-park:#6e6d68;
-      --drop:rgba(57,135,229,.16);
+      --plane:#141413; --surface:#1e1e1c; --raise:#262624;
+      --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
+      --grid:#2c2c2a; --rule:#3d3d39;
+      --ring:rgba(255,255,255,.11);
+      --drop:rgba(57,135,229,.15);
       --shadow:none;
-      --lift:0 8px 22px rgba(0,0,0,.6);
+      --lift:0 10px 26px rgba(0,0,0,.65);
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --plane:#0d0d0d; --surface:#1a1a19; --raise:#232321;
-    --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#898781;
-    --grid:#2c2c2a; --rule:#383835;
-    --ring:rgba(255,255,255,.10);
-    --c-gw:#3987e5; --c-site:#199e70; --c-admin:#d95926; --c-park:#6e6d68;
-    --drop:rgba(57,135,229,.16);
+    --plane:#141413; --surface:#1e1e1c; --raise:#262624;
+    --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
+    --grid:#2c2c2a; --rule:#3d3d39;
+    --ring:rgba(255,255,255,.11);
+    --drop:rgba(57,135,229,.15);
     --shadow:none;
-    --lift:0 8px 22px rgba(0,0,0,.6);
+    --lift:0 10px 26px rgba(0,0,0,.65);
   }
 
   *{box-sizing:border-box}
@@ -93,9 +97,9 @@
     font-weight:650;padding:2px 7px;border-radius:99px;border:1px solid var(--ring);
     color:var(--ink-muted);
   }
-  .dh .tag.shift{color:var(--c-gw);border-color:currentColor}
-  .dh .tag.desk {color:var(--c-site);border-color:currentColor}
-  .dh .tag.key  {color:var(--c-admin);border-color:currentColor}
+  .dh .tag.shift{color:var(--gw-a);border-color:currentColor}
+  .dh .tag.desk {color:var(--site-a);border-color:currentColor}
+  .dh .tag.key  {color:var(--admin-a);border-color:currentColor}
   .day.today .dh{border-bottom-color:var(--ink)}
   .day.today .dh .dd::after{content:" · today";color:var(--ink-muted);font-weight:500;font-size:11.5px}
 
@@ -106,46 +110,52 @@
 
   /* ---------------- task pill ---------------- */
   .pill{
-    background:var(--surface);border:1px solid var(--ring);border-radius:999px;
-    box-shadow:var(--shadow);overflow:hidden;
-    transition:border-radius .16s, box-shadow .12s, opacity .12s;
+    border-radius:999px;overflow:hidden;box-shadow:var(--shadow);
+    background:linear-gradient(170deg,var(--a),var(--b));
+    transition:border-radius .16s, box-shadow .12s, opacity .12s, filter .12s;
   }
-  .pill.open{border-radius:16px}
-  .pill.lifted{opacity:.35}
-  .pill.done .lbl{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
+  .cat-gw   {--a:var(--gw-a);    --b:var(--gw-b)}
+  .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
+  .cat-site {--a:var(--site-a);  --b:var(--site-b)}
+  .cat-park {--a:var(--park-a);  --b:var(--park-b)}
+  .pill:hover{filter:brightness(1.06)}
+  .pill.open{border-radius:18px}
+  .pill.lifted{opacity:.3}
+  /* finished work goes quiet — a wall of saturated chips hides what is live */
+  .pill.done{background:none;border:1px solid var(--ring);box-shadow:none}
+  .pill.done .top{color:var(--ink-muted)}
+  .pill.done .lbl{text-decoration:line-through;text-decoration-thickness:1px}
+  .pill.done .glyph,.pill.done .grip,.pill.done .st,.pill.done .chev{color:var(--ink-muted)}
 
   .top{
-    display:flex;align-items:center;gap:9px;padding:9px 13px;
-    cursor:grab;touch-action:pan-y;
+    display:flex;align-items:center;gap:9px;padding:10px 14px;
+    cursor:grab;touch-action:pan-y;color:var(--on);
   }
   /* the grip is the RELIABLE drag path: touch-action none means the browser
      never steals the gesture for scrolling. Press-and-hold on the pill body
      also works, but a fast vertical flick there scrolls instead — by design. */
   .grip{
-    flex:none;margin:-9px 0 -9px -13px;padding:9px 6px 9px 13px;
-    color:var(--ink-muted);font-size:13px;line-height:1;cursor:grab;
+    flex:none;margin:-10px 0 -10px -14px;padding:10px 5px 10px 14px;
+    color:inherit;opacity:.55;font-size:13px;line-height:1;cursor:grab;
     touch-action:none;align-self:stretch;display:flex;align-items:center;
   }
   .grip:active{cursor:grabbing}
-  .dot{width:9px;height:9px;border-radius:50%;flex:none}
-  .cat-gw    .dot{background:var(--c-gw)}
-  .cat-site  .dot{background:var(--c-site)}
-  .cat-admin .dot{background:var(--c-admin)}
-  .cat-park  .dot{background:var(--c-park)}
-  .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0}
+  /* shape carries the category as well as colour, so a filled chip is still
+     identifiable without hue */
+  .glyph{flex:none;font-size:10px;opacity:.8;width:11px;text-align:center}
+  .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0;font-weight:500}
   .st{
-    font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:650;
-    color:var(--ink-muted);flex:none;
+    font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;
+    opacity:.75;flex:none;
   }
-  .cat-gw    .st.hot{color:var(--c-gw)}
-  .cat-site  .st.hot{color:var(--c-site)}
-  .cat-admin .st.hot{color:var(--c-admin)}
-  .chev{flex:none;color:var(--ink-muted);font-size:10px;transition:transform .16s}
+  .chev{flex:none;font-size:10px;opacity:.7;transition:transform .16s}
   .pill.open .chev{transform:rotate(90deg)}
 
-  .fold{display:none;padding:2px 13px 11px 31px;border-top:1px solid var(--grid);margin-top:2px}
+  /* expanded: coloured header, plain panel beneath, so subtask text stays readable */
+  .fold{display:none;background:var(--surface);padding:11px 14px 13px 32px}
   .pill.open .fold{display:block}
-  .fold ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+  .fold ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+  .fold .meta + ul{margin-top:9px}
   .fold li{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--ink-2);cursor:pointer}
   .fold li .box{
     flex:none;width:15px;height:15px;border-radius:5px;border:1.5px solid var(--rule);
@@ -194,10 +204,10 @@
   <div id="feed"></div>
 
   <div class="legend">
-    <span><i style="background:var(--c-gw)"></i> Guess When</span>
-    <span><i style="background:var(--c-admin)"></i> Admin</span>
-    <span><i style="background:var(--c-site)"></i> Sites</span>
-    <span><i style="background:var(--c-park)"></i> Parked</span>
+    <span><i style="background:var(--gw-a)"></i> ● Guess When</span>
+    <span><i style="background:var(--admin-a)"></i> ◆ Admin</span>
+    <span><i style="background:var(--site-a)"></i> ▲ Sites</span>
+    <span><i style="background:var(--park-a)"></i> ○ Parked</span>
   </div>
 
   <footer>
@@ -289,6 +299,7 @@ const saved = null;
 
 const KEY = "progress.v1";
 const CATS = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
 const STATES = {done:"done", now:"now", next:"", blocked:"blocked"};
 const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -336,16 +347,21 @@ function dayList(){
 /* ---------------- render ---------------- */
 const feed = document.getElementById("feed");
 
+// a task is done when it says so, or when every subtask is ticked
+function isDone(t){
+  const sub = t.sub || [];
+  return t.state === "done" || (sub.length > 0 && ST[t.id].sub.every(Boolean));
+}
+
 function pillHTML(t){
   const s  = ST[t.id];
   const sub = t.sub || [];
-  const doneAll = sub.length && s.sub.every(Boolean);
-  const state = doneAll ? "done" : t.state;
+  const state = isDone(t) ? "done" : t.state;
   const hot = (state === "now");
   const label = STATES[state] || "";
   return '<div class="top">' +
       '<span class="grip" aria-label="Drag to another day">⠿</span>' +
-      '<span class="dot"></span>' +
+      '<span class="glyph" aria-hidden="true">' + (GLYPH[t.cat] || "") + "</span>" +
       '<span class="lbl">' + t.t + "</span>" +
       (label ? '<span class="st' + (hot ? " hot" : "") + '">' + label + "</span>" : "") +
       ((sub.length || t.note) ? '<span class="chev">▶</span>' : "") +
@@ -376,14 +392,14 @@ function render(){
       "</div>" +
       '<div class="slot" data-d="' + d + '">' +
         (byDay[d] || []).map(t =>
-          '<article class="pill cat-' + t.cat + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+          '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
       "</div></section>";
   }
   // unscheduled bucket, always a valid drop target
   html += '<section class="day" data-d=""><div class="dh"><span class="dd">Unscheduled</span>' +
           '<span class="dw">no date yet</span></div>' +
           '<div class="slot" data-d="">' + (byDay[""] || []).map(t =>
-            '<article class="pill cat-' + t.cat + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
+            '<article class="pill cat-' + t.cat + (isDone(t) ? " done" : "") + '" data-id="' + t.id + '">' + pillHTML(t) + "</article>").join("") +
           "</div></section>";
 
   const open = [...document.querySelectorAll(".pill.open")].map(p => p.dataset.id);
