@@ -21,6 +21,13 @@
     --park-a:#767671;  --park-b:#61615d;
     --rest:#4c4b47;
     --on:#fff;
+    /* PEOPLE. The four category hues above already own blue / orange / green /
+       grey, so violet and magenta are what is left that cannot be mistaken for
+       a category. Both clear 4.5:1 against the white initial (6.0 and 5.5) —
+       and the initial is the real encoding, colour only reinforces it, the
+       same way size is backed by the word on the detail page. */
+    --who-don:#6d4aca; --who-anna:#c02a6e;
+    --glass:rgba(255,255,255,.82); --glass-ring:rgba(11,11,11,.10);
     --shadow:0 1px 2px rgba(11,11,11,.07);
     --now-shadow:0 2px 10px rgba(11,11,11,.10);
   }
@@ -31,6 +38,7 @@
       --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
       --rule:#2c2c2a; --ring:rgba(255,255,255,.11);
       --rest:#565550;
+      --glass:rgba(30,30,28,.84); --glass-ring:rgba(255,255,255,.13);
       --shadow:none; --now-shadow:0 2px 12px rgba(0,0,0,.5);
     }
   }
@@ -40,6 +48,7 @@
     --ink:#fff; --ink-2:#c3c2b7; --ink-muted:#8e8d87;
     --rule:#2c2c2a; --ring:rgba(255,255,255,.11);
     --rest:#565550;
+    --glass:rgba(30,30,28,.84); --glass-ring:rgba(255,255,255,.13);
     --shadow:none; --now-shadow:0 2px 12px rgba(0,0,0,.5);
   }
 
@@ -51,6 +60,31 @@
   }
   .wrap{max-width:600px;margin:0 auto;
         padding:16px 14px calc(48px + env(safe-area-inset-bottom))}
+  /* Only the list makes room for the floating tabs — the detail page hides
+     them, and reserving the space there would leave a hole above the title. */
+  body.list .wrap{padding-top:calc(64px + env(safe-area-inset-top))}
+
+  /* ---------------- who filter ---------------- */
+  .tabs{
+    position:fixed;z-index:20;
+    top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+    display:flex;gap:2px;padding:4px;border-radius:999px;
+    background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    box-shadow:0 2px 14px rgba(11,11,11,.13), inset 0 0 0 1px var(--glass-ring);
+  }
+  .tabs[hidden]{display:none}
+  .tab{
+    appearance:none;border:0;background:none;cursor:pointer;font:inherit;
+    display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;
+    font-size:12.5px;font-weight:650;color:var(--ink-2);white-space:nowrap;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
+  .tab .n{font-size:10.5px;font-weight:700;opacity:.6;font-variant-numeric:tabular-nums}
+  .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--who)}
+
+  .empty{text-align:center;color:var(--ink-muted);font-size:14px;padding:40px 10px}
+  .empty b{color:var(--ink-2)}
 
   /* ---------------- day block ---------------- */
   .day{margin-bottom:14px}
@@ -135,6 +169,18 @@
   .glyph{flex:none;font-size:10px;opacity:.8;width:11px;text-align:center}
   .lbl{flex:1;font-size:14px;line-height:1.35;min-width:0;font-weight:500;padding:9px 0}
   .pct{flex:none;font-size:11.5px;font-weight:700;opacity:.9;font-variant-numeric:tabular-nums}
+
+  /* OWNER. A white ring, not a bare disc — the circle sits on four different
+     category gradients and must separate from all of them. */
+  .who{
+    flex:none;width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;font-weight:800;color:#fff;background:var(--who);
+    box-shadow:0 0 0 1.5px rgba(255,255,255,.88);
+  }
+  .sz-major .who{width:25px;height:25px;font-size:11.5px}
+  .who-don {--who:var(--who-don)}
+  .who-anna{--who:var(--who-anna)}
   .go{
     flex:none;align-self:stretch;display:flex;align-items:center;
     padding:0 15px;color:var(--on);opacity:.6;font-size:15px;
@@ -148,7 +194,8 @@
   .back:hover{color:var(--ink)}
   .dtitle{font-size:22px;line-height:1.25;margin:0 0 10px;letter-spacing:-.02em}
   .dmeta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px}
-  .tag{font-size:11px;font-weight:650;padding:4px 10px;border-radius:99px;
+  .tag{display:inline-flex;align-items:center;gap:6px;
+       font-size:11px;font-weight:650;padding:4px 10px;border-radius:99px;
        border:1px solid var(--ring);color:var(--ink-2)}
   .tag.fill{color:var(--on);border-color:transparent;background:var(--a)}
   .bar{height:8px;border-radius:99px;background:var(--rest);overflow:hidden;margin-bottom:22px}
@@ -182,7 +229,8 @@
   .pad0{padding:0}
 </style>
 </head>
-<body>
+<body class="list">
+<nav class="tabs" id="tabs" aria-label="Filter by person"></nav>
 <div class="wrap" id="wrap"></div>
 
 <script>
@@ -194,6 +242,7 @@
    size  minor | moderate | major   (effort, NOT importance)
    done  what finished actually means — one line
    needs ids this task waits on; "blocks" is derived from it
+   who   owner id from PEOPLE; omitted means DEFAULT_WHO
    ========================================================== */
 const TASKS = [
   {id:"studio", d:"2026-07-23", cat:"site", pct:100, size:"moderate", t:"Studio site",
@@ -338,6 +387,19 @@ const HORIZON = 21;
 
 const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
 const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+
+/* PEOPLE — the colour lives in CSS as .who-<id>, the same split the categories
+   already use: JS holds the structure, CSS holds the palette. Adding a third
+   person is one line here and one line there.
+   A row with no `who` belongs to DEFAULT_WHO. This list was one person's before
+   it was two, so spelling the default onto every row would only make the rows
+   that DO differ harder to spot. */
+const PEOPLE = {
+  don:  {name:"Don",  initial:"D"},
+  anna: {name:"Anna", initial:"A"}
+};
+const DEFAULT_WHO = "don";
+const whoOf = t => PEOPLE[t.who] ? t.who : DEFAULT_WHO;
 const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const pad = n => String(n).padStart(2,"0");
@@ -372,6 +434,15 @@ for (const t of TASKS) for (const n of (t.needs||[])) (BLOCKS[n] ||= []).push(t.
 
 const paintPct = p => p === 0 ? 12 : Math.max(0, Math.min(100,p));
 
+function avatar(t){
+  const id = whoOf(t), p = PEOPLE[id];
+  return '<span class="who who-' + id + '" title="' + esc(p.name) + '">' +
+         esc(p.initial) + "</span>";
+}
+const ownerTag = t =>
+  '<span class="tag"><span class="dot who-' + whoOf(t) + '"></span>' +
+  esc(PEOPLE[whoOf(t)].name) + "</span>";
+
 function chip(t){
   if (IS_PROC[t.id]){
     const s = procState(t);
@@ -380,6 +451,7 @@ function chip(t){
         '<span class="glyph" aria-hidden="true">↻</span>' +
         '<span class="lbl">' + esc(t.t) + "</span>" +
         '<span class="cyc">' + s.label + "</span>" +
+        avatar(t) +
         '<a class="go" href="#/t/' + t.id + '" aria-label="Open ' + esc(t.t) + '">›</a>' +
       "</div></article>";
   }
@@ -390,14 +462,68 @@ function chip(t){
         '<span class="glyph" aria-hidden="true">' + GLYPH[t.cat] + "</span>" +
         '<span class="lbl">' + esc(t.t) + "</span>" +
         '<span class="pct">' + pct + "%</span>" +
+        avatar(t) +
         '<a class="go" href="#/t/' + t.id + '" aria-label="Open ' + esc(t.t) + '">›</a>' +
       "</div></article>";
 }
 
+/* ---------------- who filter ----------------
+   Kept in localStorage rather than the hash: the hash is the ROUTE, and a
+   filter that travelled in a link would mean sending somebody a page with
+   half the work silently missing. */
+let FILTER = "all";
+try { FILTER = localStorage.getItem("who") || "all"; } catch(e){}
+if (FILTER !== "all" && !PEOPLE[FILTER]) FILTER = "all";
+const mine = t => FILTER === "all" || whoOf(t) === FILTER;
+
+/* Counts are OPEN work only. Counting everything would make a person's number
+   grow as they finished things, which is backwards. */
+function openCount(id){
+  const pick = x => id === "all" || whoOf(x) === id;
+  return TASKS.filter(x => pick(x) && x.pct < 100).length +
+         PROCESSES.filter(x => pick(x) && x.from !== "launch").length;
+}
+
+const tabsEl = document.getElementById("tabs");
+function renderTabs(){
+  tabsEl.innerHTML = ["all", ...Object.keys(PEOPLE)].map(id =>
+    '<button class="tab" type="button" data-who="' + id + '" aria-pressed="' +
+      (FILTER === id) + '">' +
+      (id === "all" ? "" : '<span class="dot who-' + id + '"></span>') +
+      "<span>" + esc(id === "all" ? "All" : PEOPLE[id].name) + "</span>" +
+      '<span class="n">' + openCount(id) + "</span></button>").join("");
+}
+tabsEl.addEventListener("click", e => {
+  const b = e.target.closest(".tab");
+  if (!b || b.dataset.who === FILTER) return;
+  FILTER = b.dataset.who;
+  try { localStorage.setItem("who", FILTER); } catch(e){}
+  listScroll = 0;              // the feed is a different length now
+  renderTabs();
+  wrap.innerHTML = listView();
+  scrollTo(0,0);
+});
+
 /* ---------------- list view ---------------- */
 function listView(){
+  /* Filtering happens ONCE, here at the source. Everything downstream — the
+     empty-day runs, the history block, the undated section — then collapses on
+     its own, with no second idea of what is visible. */
+  const tasks = TASKS.filter(mine);
+
+  /* Processes sit below the timeline rather than on a day — they are not
+     scheduled, they are kept up. Overdue and due-soon float to the top of
+     their own section so upkeep slipping is still visible. */
+  const rank = p => { const s = procState(p);
+    return s.cls === "over" ? 0 : s.cls === "due" ? 1 : p.from === "launch" ? 3 : 2; };
+  const ongoing = PROCESSES.filter(mine).sort((a,b) => rank(a) - rank(b));
+
+  if (!tasks.length && !ongoing.length)
+    return '<div class="empty">Nothing assigned to <b>' +
+           esc(PEOPLE[FILTER].name) + "</b> yet.</div>";
+
   const byDay = {};
-  for (const t of TASKS) (byDay[t.d] ||= []).push(t);
+  for (const t of tasks) (byDay[t.d] ||= []).push(t);
 
   function block(d, cls){
     const dt = parse(d), note = DAYNOTES[d];
@@ -442,14 +568,9 @@ function listView(){
   if (byDay[""]) html += '<hr class="rule"><div class="hist">No date</div>' +
     '<div class="slot">' + byDay[""].map(chip).join("") + "</div>";
 
-  /* Processes sit below the timeline rather than on a day — they are not
-     scheduled, they are kept up. Overdue and due-soon float to the top of
-     their own section so upkeep slipping is still visible. */
-  const rank = p => { const s = procState(p);
-    return s.cls === "over" ? 0 : s.cls === "due" ? 1 : p.from === "launch" ? 3 : 2; };
-  const ongoing = PROCESSES.slice().sort((a,b) => rank(a) - rank(b));
-  html += '<hr class="rule"><div class="hist">Ongoing · no finish</div>' +
-          '<div class="slot">' + ongoing.map(chip).join("") + "</div>";
+  if (ongoing.length)
+    html += '<hr class="rule"><div class="hist">Ongoing · no finish</div>' +
+            '<div class="slot">' + ongoing.map(chip).join("") + "</div>";
   return html;
 }
 
@@ -462,6 +583,7 @@ function depChip(id){
     '<span class="glyph" aria-hidden="true">' + GLYPH[t.cat] + "</span>" +
     '<span class="lbl">' + esc(t.t) + "</span>" +
     '<span class="pct">' + t.pct + "%</span>" +
+    avatar(t) +
     '<a class="go" href="#/t/' + t.id + '">›</a></div></article>';
 }
 
@@ -476,6 +598,7 @@ function processView(p){
     '<h1 class="dtitle">' + esc(p.t) + "</h1>" +
     '<div class="dmeta">' +
       '<span class="tag fill">↻ Process</span>' +
+      ownerTag(p) +
       '<span class="tag">' + esc(p.every) + "</span>" +
       '<span class="tag">' + p.size + "</span>" +
       '<span class="tag">' + s.when + "</span>" +
@@ -513,6 +636,7 @@ function detailView(t){
     '<h1 class="dtitle">' + esc(t.t) + "</h1>" +
     '<div class="dmeta">' +
       '<span class="tag fill">' + GLYPH[t.cat] + " " + CATS[t.cat] + "</span>" +
+      ownerTag(t) +
       '<span class="tag">' + t.size + "</span>" +
       '<span class="tag">' + when + "</span>" +
       '<span class="tag">' + t.pct + "% done</span>" +
@@ -556,9 +680,16 @@ let listScroll = 0;
 function route(){
   const m = location.hash.match(/^#\/t\/([\w-]+)$/);
   if (m && BY_ID[m[1]]){
+    // A detail page is reached by link and must open whoever it belongs to,
+    // so the filter is hidden rather than applied.
+    document.body.className = "detail";
+    tabsEl.hidden = true;
     wrap.innerHTML = detailView(BY_ID[m[1]]);
     scrollTo(0,0);
   } else {
+    document.body.className = "list";
+    tabsEl.hidden = false;
+    renderTabs();
     wrap.innerHTML = listView();
     scrollTo(0, listScroll);
   }
