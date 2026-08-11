@@ -21,6 +21,21 @@
     --park-a:#767671;  --park-b:#61615d;
     --rest:#4c4b47;
     --on:#fff;
+    /* WORK TYPE — what KIND of work, now the chip fill. The project moved to
+       the glyph, because two categorical colour dimensions cannot both be
+       colour. Donis picked light blue / salad green / yellow / pink; three are
+       darkened here until white label text clears 4.5:1.
+       YELLOW IS THE EXCEPTION AND IT MATTERS: darkened enough for white text
+       it turns olive, and olive against dark yellow-green measured ΔE 2.1 for
+       protanopia and 8.0 for NORMAL vision — indistinguishable to everyone.
+       Left bright with DARK ink instead (10.3:1) it stays yellow and the set
+       passes: worst all-pairs ΔE 8.2 CVD, 19.7 normal. It sits outside the
+       lightness band on purpose, exactly as a warning colour does. */
+    --w-script-a:#387aae; --w-script-b:#2e648f;
+    --w-ui-a:#5c8125;     --w-ui-b:#4b6a1e;
+    --w-art-a:#e8bd22;    --w-art-b:#c9a316;
+    --w-market-a:#bf4c80; --w-market-b:#9d3e69;
+    --w-none-a:#767671;   --w-none-b:#61615d;
     /* PEOPLE. The four category hues above already own blue / orange / green /
        grey, so violet and magenta are what is left that cannot be mistaken for
        a category. Both clear 4.5:1 against the white initial (6.0 and 5.5) —
@@ -81,7 +96,11 @@
     }
     .rail,.cal{display:block;position:sticky;top:18px;padding-top:22px}
     .wrap{padding-top:22px}
-    .tabs{left:auto;right:26px;transform:none}   /* out of the centre column */
+    /* The floating bar is a PHONE control. On desktop it had nowhere to sit
+       that was not on top of something, so the person filter moves into the
+       rail beside the other filters and the bar goes away entirely. */
+    .tabs{display:none !important}
+    body.list .wrap{padding-top:22px}
   }
 
   /* left rail — the other pages of this hub */
@@ -99,6 +118,39 @@
   .rail a[aria-current="page"] i{opacity:1}
   .rail .soon{opacity:.45}
   .rail .soon:hover{background:none;color:var(--ink-2);cursor:default}
+  .rail section{margin-top:20px}
+
+  /* the phone has no rail, so the type filter rides above the feed as a
+     scrolling strip — and being swatch-plus-name, it is the legend too */
+  .wstrip{
+    display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
+    margin:0 -14px 12px;padding:0 14px 2px;
+  }
+  .wstrip::-webkit-scrollbar{display:none}
+  .wstrip .wtab{
+    width:auto;flex:none;padding:6px 11px;border-radius:999px;font-size:12.5px;
+    background:var(--surface);border:1px solid var(--ring);white-space:nowrap;
+  }
+  .wstrip .wtab b{margin-left:5px}
+  @media (min-width:1000px) and (hover:hover){ .wstrip{display:none} }
+
+  /* filter rows in the rail — same shape as the section links so the whole
+     column reads as one list rather than three unrelated widgets */
+  .wtab,.ptab{
+    appearance:none;border:0;background:none;font:inherit;cursor:pointer;width:100%;
+    display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:9px;
+    color:var(--ink-2);font-size:13px;font-weight:550;text-align:left;
+  }
+  .wtab:hover,.ptab:hover{background:var(--surface);color:var(--ink)}
+  .wtab.on,.ptab.on{background:var(--ink);color:var(--plane);font-weight:650}
+  .wtab b,.ptab b{margin-left:auto;font-size:11px;font-weight:700;opacity:.55;
+                  font-variant-numeric:tabular-nums}
+  .wtab .sw,.ptab .sw{
+    flex:none;width:11px;height:11px;border-radius:3px;
+    background:linear-gradient(160deg,var(--a,var(--ink-muted)),var(--b,var(--ink-muted)));
+  }
+  .wtab .sw.all{background:linear-gradient(120deg,var(--w-script-a),var(--w-art-a) 55%,var(--w-market-a))}
+  .ptab .sw{border-radius:50%;background:var(--who)}
 
   /* right rail — month at a glance, clicking a day jumps to it */
   .cal .mon{
@@ -246,6 +298,15 @@
       linear-gradient(170deg,var(--a),var(--b));
     transition:filter .12s;
   }
+  /* fill = WORK TYPE; the project is the glyph */
+  .w-script{--a:var(--w-script-a); --b:var(--w-script-b)}
+  .w-ui    {--a:var(--w-ui-a);     --b:var(--w-ui-b)}
+  .w-art   {--a:var(--w-art-a);    --b:var(--w-art-b); --on:#141413}
+  .w-market{--a:var(--w-market-a); --b:var(--w-market-b)}
+  .w-none  {--a:var(--w-none-a);   --b:var(--w-none-b)}
+  /* the bright yellow needs its own ring — a light chip on a near-white page
+     has only 1.73:1 of edge, so the border does the work the fill cannot */
+  .w-art{box-shadow:var(--shadow), inset 0 0 0 1px rgba(11,11,11,.22)}
   .cat-gw   {--a:var(--gw-a);    --b:var(--gw-b)}
   .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
   .cat-site {--a:var(--site-a);  --b:var(--site-b)}
@@ -365,43 +426,43 @@
    who   owner id from PEOPLE; omitted means DEFAULT_WHO
    ========================================================== */
 const TASKS = [
-  {id:"studio", d:"2026-07-23", cat:"site", pct:100, size:"moderate", t:"Studio site",
+  {id:"studio", work:"ui", d:"2026-07-23", cat:"site", pct:100, size:"moderate", t:"Studio site",
    done:"Live on its own domain over HTTPS.",
    links:[["candlelitstudio.co.uk","https://candlelitstudio.co.uk"]]},
 
-  {id:"h2o", d:"2026-07-25", cat:"site", pct:100, size:"moderate", t:"Well-drilling site",
+  {id:"h2o", work:"ui", d:"2026-07-25", cat:"site", pct:100, size:"moderate", t:"Well-drilling site",
    done:"Live, indexable, and the domain renewed.",
    links:[["mb-h2o.lt","https://mb-h2o.lt"]]},
 
-  {id:"years", d:"2026-08-08", cat:"gw", pct:100, size:"major", t:"Review the 291 suspect years",
+  {id:"years", work:"script", d:"2026-08-08", cat:"gw", pct:100, size:"major", t:"Review the 291 suspect years",
    done:"Every suspect answered and the corrected deck live.",
    note:"The dates were verified at harvest — against the wrong claim. Wikidata's inception for the entity is not the date the card's verb asks about.",
    sub:[["Diagnose and bucket",1],["Research every suspect",1],["Apply and upload",1]],
    log:[["2026-08-08","237 corrected, 20 kept because the flag was wrong, 34 held back for a decision. Deck live."],
         ["2026-08-08","Biggest single fix: gas lighting 300 → 1792. Out by 1,492 years."]]},
 
-  {id:"sweep", d:"2026-08-08", cat:"gw", pct:100, size:"moderate", t:"Deck quality sweep",
+  {id:"sweep", work:"script", d:"2026-08-08", cat:"gw", pct:100, size:"moderate", t:"Deck quality sweep",
    done:"Categories and fields corrected deck-wide.",
    log:[["2026-08-08","73 categories and 56 fields corrected. 73 cards had 'invention' on things nobody invented."]]},
 
-  {id:"toasts", d:"2026-08-09", cat:"gw", pct:100, size:"minor", t:"Wrong-placement message fixes",
+  {id:"toasts", work:"ui", d:"2026-08-09", cat:"gw", pct:100, size:"minor", t:"Wrong-placement message fixes",
    done:"Reads correctly on a phone, not just in the editor.",
    sub:[["Wrap by width, not a newline",1],["Move -HP below the result",1],["Retime all three beats",1]],
    log:[["2026-08-09","Wrapped by width rather than a hard newline — a newline would have broken the localisation key across 13 languages."],
         ["2026-08-09","'first one is free - 3 more cards' read as MINUS three. Now '+3 cards'."]]},
 
-  {id:"expedition", d:"2026-08-09", cat:"gw", pct:100, size:"major", t:"Expedition roguelite mode",
+  {id:"expedition", work:"script", d:"2026-08-09", cat:"gw", pct:100, size:"major", t:"Expedition roguelite mode",
    done:"A run plays end to end, entrance to boss.",
    note:"The bet: an RPG layer brings in players who don't care about history trivia. Optional, so it can't alienate the ones who do.",
    log:[["2026-08-09","Map, routes, 12 relics, boss, rest and shop nodes, balance simulator."],
         ["2026-08-09","Sim reports novice 0%, average 43%, expert 100%. A 0% novice tier is the bridge thesis failing — but the sim carries no relics, so it's a floor not a forecast."]]},
 
-  {id:"track", d:"2026-08-10", cat:"gw", pct:0, size:"minor", t:"Push a build to the test track",
+  {id:"track", work:"market", d:"2026-08-10", cat:"gw", pct:0, size:"minor", t:"Push a build to the test track",
    done:"Testers are playing the same build you are.",
    note:"The store is on versionCode 9 while the working build is 21. The closed test is not testing the ship build.",
    sub:[["Pick the build to promote",0],["Upload to closed test",0],["Confirm testers get it",0]]},
 
-  {id:"cards", d:"2026-08-10", cat:"gw", pct:0, size:"major", t:"Rule the 79 held cards",
+  {id:"cards", work:"script", d:"2026-08-10", cat:"gw", pct:0, size:"major", t:"Rule the 79 held cards",
    done:"All 79 ruled and handed back to be applied.",
    note:"Phone work — read a card, make a call. These need a person, not a script.",
    sub:[["34 wrong-title cards",0],["45 quality cards",0],["Hand rulings back",0]]},
@@ -411,12 +472,12 @@ const TASKS = [
    note:"ESTIMATE — 31 items left, but the starting total was never recorded. Correct it.",
    sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
 
-  {id:"email", d:"2026-08-11", cat:"gw", pct:100, size:"minor", t:"Fix store support-email typo",
+  {id:"email", work:"market", d:"2026-08-11", cat:"gw", pct:100, size:"minor", t:"Fix store support-email typo",
    done:"The listed address is one that is actually monitored.",
    note:"Verified 11 Aug against the live Play API and both privacy pages — every one of them already reads kozzzygames@gmail.com, and the two-z spelling appears in no file anywhere. Either it was fixed unlogged or the original sighting was wrong.",
    log:[["2026-08-11","Checked rather than assumed: edits.details.get returns contactEmail=kozzzygames@gmail.com. Nothing to change."]]},
 
-  {id:"drag", d:"2026-08-11", cat:"gw", pct:0, size:"major", t:"Drag and prediction projection",
+  {id:"drag", work:"ui", d:"2026-08-11", cat:"gw", pct:0, size:"major", t:"Drag and prediction projection",
    done:"Clearly better on a phone by the 13th — or reverted. Not 'perfect'.",
    note:"The only item on the list with no natural definition of done, which is why it has a hard cutoff. The current drag works and testers are playing it.",
    needs:["track"],
@@ -461,30 +522,30 @@ const TASKS = [
         ["2026-08-11","Two independent methods agreed: the judges were blind to the numbers, yet tier 1 has double the sitelinks and four times the page views of everything else."],
         ["2026-08-11","Not applied. 85 of the 200 are staged cards nobody has merged, so writing the tier now would quietly demote them."]]},
 
-  {id:"place", d:"2026-08-13", cat:"gw", pct:0, size:"moderate", t:"Component placement",
+  {id:"place", work:"ui", d:"2026-08-13", cat:"gw", pct:0, size:"moderate", t:"Component placement",
    done:"Layout settled at both screen widths.",
    note:"After the drag, because the drag decides what space the layout has to work around.",
    needs:["drag"],
    sub:[["Lay out the play area",0],["Check both screen widths",0]]},
 
-  {id:"look", d:"2026-08-14", cat:"gw", pct:0, size:"moderate", t:"Look and visual polish",
+  {id:"look", work:"art", d:"2026-08-14", cat:"gw", pct:0, size:"moderate", t:"Look and visual polish",
    done:"Nothing clips at either width, in English or Lithuanian.",
    note:"Never style something about to move — so this waits on placement.",
    needs:["place"],
    sub:[["Colour and spacing pass",0],["Lithuanian overflow check",0]]},
 
-  {id:"bridge", d:"2026-08-14", cat:"gw", pct:0, size:"minor", t:"Test Expedition on non-trivia players",
+  {id:"bridge", work:"market", d:"2026-08-14", cat:"gw", pct:0, size:"minor", t:"Test Expedition on non-trivia players",
    done:"Four of them have it, and you know whether any played unprompted.",
    note:"The testers written off as cosmetic are the only ones who can prove the bridge thesis. The history nerds can't — they'd have played anyway.",
    needs:["track"],
    sub:[["Get it to four of them",0],["Watch for unprompted play",0]]},
 
-  {id:"mp", d:"2026-08-17", cat:"gw", pct:0, size:"moderate", t:"Multiplayer stress test",
+  {id:"mp", work:"script", d:"2026-08-17", cat:"gw", pct:0, size:"moderate", t:"Multiplayer stress test",
    done:"Two testers played each other at the same time, on a near-final build.",
    note:"The long pole is calendars, not code. Book the people before the build is ready.",
    needs:["track"]},
 
-  {id:"ship", d:"2026-08-29", cat:"gw", pct:0, size:"minor", t:"Ship decision",
+  {id:"ship", work:"market", d:"2026-08-29", cat:"gw", pct:0, size:"minor", t:"Ship decision",
    done:"Promoted to production, or slipped with a new date written down.",
    note:"Small to do, large to get wrong. The 5th of September is the hard wall — after that the next safe window is November.",
    needs:["look","mp","bridge","email"]},
@@ -499,15 +560,15 @@ const TASKS = [
   {id:"notice", d:"2026-08-31", cat:"admin", pct:0, size:"minor", t:"Give notice for the time away",
    done:"The agency knows, two weeks ahead."},
 
-  {id:"form", d:"", cat:"site", pct:90, size:"minor", t:"Contact form activation",
+  {id:"form", work:"ui", d:"", cat:"site", pct:90, size:"minor", t:"Contact form activation",
    done:"A message sent from the site arrives.",
    note:"Everything else is live. Waiting on one sign-off."},
 
-  {id:"vector", d:"", cat:"park", pct:0, size:"major", t:"Vector art tool",
+  {id:"vector", work:"art", d:"", cat:"park", pct:0, size:"major", t:"Vector art tool",
    done:"—", note:"After the farm season. Build it only once a launched game gives it real requirements."},
-  {id:"loc", d:"", cat:"park", pct:0, size:"major", t:"European localisation",
+  {id:"loc", work:"script", d:"", cat:"park", pct:0, size:"major", t:"European localisation",
    done:"—", note:"Post-launch. Ten locales on content that keeps moving is double work.", needs:["cards"]},
-  {id:"imgs", d:"", cat:"park", pct:0, size:"moderate", t:"Self-hosted card images",
+  {id:"imgs", work:"script", d:"", cat:"park", pct:0, size:"moderate", t:"Self-hosted card images",
    done:"—", note:"Post-launch. Only pre-launch action: confirm cards store an image PATH, not a full URL."}
 ];
 
@@ -555,6 +616,16 @@ const HORIZON = 21;
 
 const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
 const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+/* Donis's four, plus a neutral. The four are all game-dev, so admin, tax,
+   security and farm work genuinely has no type — those stay grey rather than
+   being forced into a box that does not fit. */
+const WORKS = {
+  script:{name:"Scripting"},
+  ui:    {name:"UI / UX"},
+  art:   {name:"Graphical"},
+  market:{name:"Marketing"},
+  none:  {name:"Other"}
+};
 
 /* PEOPLE — the colour lives in CSS as .who-<id>, the same split the categories
    already use: JS holds the structure, CSS holds the palette. Adding a third
@@ -650,7 +721,7 @@ const ownerTag = t =>
 function chip(t){
   if (IS_PROC[t.id]){
     const s = procState(t);
-    return '<article class="pill proc ' + s.cls + " cat-" + t.cat + " sz-" + t.size +
+    return '<article class="pill proc ' + s.cls + " cat-" + t.cat + " w-" + (t.work || "none") + " sz-" + t.size +
              '" style="--p:' + s.pct + '%"><div class="top">' +
         '<span class="glyph" aria-hidden="true">↻</span>' +
         '<span class="lbl">' + esc(titleOf(t)) + "</span>" +
@@ -660,7 +731,7 @@ function chip(t){
       "</div></article>";
   }
   const pct = Math.max(0, Math.min(100, t.pct));
-  return '<article class="pill cat-' + t.cat + " sz-" + t.size +
+  return '<article class="pill cat-' + t.cat + " w-" + (t.work || "none") + " sz-" + t.size +
            '" style="--p:' + paintPct(pct) + '%">' +
       '<div class="top">' +
         '<span class="grip" aria-hidden="true" title="Drag to another day">⠿</span>' +
@@ -679,7 +750,14 @@ function chip(t){
 let FILTER = "all";
 try { FILTER = localStorage.getItem("who") || "all"; } catch(e){}
 if (FILTER !== "all" && !PEOPLE[FILTER]) FILTER = "all";
-const mine = t => FILTER === "all" || whoOf(t) === FILTER;
+let WFILTER = "all";
+try { WFILTER = localStorage.getItem("work") || "all"; } catch(e){}
+if (WFILTER !== "all" && !WORKS[WFILTER]) WFILTER = "all";
+
+/* Both axes AND together. Independent filters that silently replaced each
+   other would make the empty state a lie. */
+const mine = t => (FILTER === "all"  || whoOf(t) === FILTER)
+               && (WFILTER === "all" || (t.work || "none") === WFILTER);
 
 /* Counts are OPEN work only. Counting everything would make a person's number
    grow as they finished things, which is backwards. */
@@ -688,6 +766,34 @@ function openCount(id){
   return TASKS.filter(x => pick(x) && x.pct < 100).length +
          PROCESSES.filter(x => pick(x) && x.from !== "launch").length;
 }
+
+/* Open work only, and the SAME rule openCount uses, so the two filter axes
+   never disagree about what "open" means. Counts also respect the person
+   filter, so switching to Anna renumbers the types under her. */
+function workCount(w){
+  const hit = t => (FILTER === "all" || whoOf(t) === FILTER) &&
+                   (w === "all" || (t.work || "none") === w);
+  return TASKS.filter(x => hit(x) && x.pct < 100).length +
+         PROCESSES.filter(x => hit(x) && x.from !== "launch").length;
+}
+/* This IS the legend. A separate colour key would be a second thing to keep in
+   step with the filter; one control that shows the swatch beside the name
+   cannot drift out of date. */
+function workButtons(){
+  return ["all", ...Object.keys(WORKS)].map(w =>
+      '<button class="wtab' + (WFILTER === w ? " on" : "") + '" data-work="' + w + '">' +
+        (w === "all" ? '<i class="sw all"></i>' : '<i class="sw w-' + w + '"></i>') +
+        "<span>" + (w === "all" ? "Everything" : WORKS[w].name) + "</span>" +
+        '<b>' + workCount(w) + "</b></button>").join("");
+}
+function renderWorks(into){ into.innerHTML = "<h3>Work type</h3>" + workButtons(); }
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-work]");
+  if (!b) return;
+  WFILTER = b.dataset.work;
+  try { localStorage.setItem("work", WFILTER); } catch(err){}
+  route();
+});
 
 const tabsEl = document.getElementById("tabs");
 function renderTabs(){
@@ -888,14 +994,32 @@ const SECTIONS = [
   {id:"firebase",     icon:"◆", name:"Firebase"},
   {id:"architecture", icon:"⌘", name:"Architecture"}
 ];
+function renderPeopleRail(){
+  return "<h3>Person</h3>" + ["all", ...Object.keys(PEOPLE)].map(id =>
+    '<button class="ptab' + (FILTER === id ? " on" : "") + '" data-who="' + id + '">' +
+      (id === "all" ? '<i class="sw" style="background:var(--ink-muted)"></i>'
+                    : '<i class="sw who-' + id + '"></i>') +
+      "<span>" + esc(id === "all" ? "Everyone" : PEOPLE[id].name) + "</span>" +
+      "<b>" + openCount(id) + "</b></button>").join("");
+}
 function renderRail(active){
-  document.getElementById("rail").innerHTML = "<h3>Sections</h3>" +
+  const el = document.getElementById("rail");
+  el.innerHTML = "<h3>Sections</h3>" +
     SECTIONS.map(s => s.live
       ? '<a href="#/' + s.id + '"' + (active === s.id ? ' aria-current="page"' : "") +
         '><i>' + s.icon + "</i>" + s.name + "</a>"
       : '<a class="soon" href="#/' + s.id + '"' + (active === s.id ? ' aria-current="page"' : "") +
         '><i>' + s.icon + "</i>" + s.name + "</a>"
     ).join("");
+  // filters belong to the list; a detail page has nothing to filter
+  if (active === ""){
+    const people = document.createElement("section");
+    people.innerHTML = renderPeopleRail();
+    el.append(people);
+    const work = document.createElement("section");
+    renderWorks(work);
+    el.append(work);
+  }
 }
 
 /* ---------------- right rail: the month ----------------
@@ -1113,7 +1237,7 @@ function route(){
     tabsEl.hidden = false;
     renderTabs();
     renderRail("");
-    wrap.innerHTML = listView() + stashBanner();
+    wrap.innerHTML = '<div class="wstrip">' + workButtons() + "</div>" + listView() + stashBanner();
     renderCal();
     scrollTo(0, listScroll);
   }
