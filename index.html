@@ -119,6 +119,22 @@
   .rail .soon{opacity:.45}
   .rail .soon:hover{background:none;color:var(--ink-2);cursor:default}
   .rail section{margin-top:20px}
+  .ptab.proj .pg{
+    flex:none;width:13px;text-align:center;font-size:10px;font-style:normal;opacity:.65;
+  }
+  .ptab.proj.on .pg{opacity:1}
+  /* the parts of the project you are in, indented under it and hung off a
+     rule so the nesting is visible without an arrow to click */
+  .parts{margin:2px 0 6px 19px;padding-left:10px;border-left:1.5px solid var(--rule)}
+  .parts a{
+    display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
+    color:var(--ink-2);text-decoration:none;font-size:12.5px;
+  }
+  .parts a:hover{background:var(--surface);color:var(--ink)}
+  .parts a[aria-current="page"]{color:var(--ink);font-weight:650}
+  .parts a.soon{opacity:.45}
+  .parts a.soon:hover{background:none;color:var(--ink-2)}
+  .parts a i{font-style:normal;width:13px;text-align:center;font-size:11px;opacity:.7}
 
   /* the phone has no rail, so the type filter rides above the feed as a
      scrolling strip — and being swatch-plus-name, it is the legend too */
@@ -131,7 +147,14 @@
     width:auto;flex:none;padding:6px 11px;border-radius:999px;font-size:12.5px;
     background:var(--surface);border:1px solid var(--ring);white-space:nowrap;
   }
-  .wstrip .wtab b{margin-left:5px}
+  .wstrip .wtab b,.wstrip .ptab b{margin-left:5px}
+  .pstrip{margin-bottom:7px}
+  .pstrip .ptab{
+    width:auto;flex:none;padding:6px 11px;border-radius:999px;font-size:12.5px;
+    background:var(--surface);border:1px solid var(--ring);white-space:nowrap;
+  }
+  /* the nested parts are a desktop affordance; the phone strip is one level */
+  .pstrip .parts{display:none}
   @media (min-width:1000px) and (hover:hover){ .wstrip{display:none} }
 
   /* filter rows in the rail — same shape as the section links so the whole
@@ -757,7 +780,8 @@ if (WFILTER !== "all" && !WORKS[WFILTER]) WFILTER = "all";
 /* Both axes AND together. Independent filters that silently replaced each
    other would make the empty state a lie. */
 const mine = t => (FILTER === "all"  || whoOf(t) === FILTER)
-               && (WFILTER === "all" || (t.work || "none") === WFILTER);
+               && (WFILTER === "all" || (t.work || "none") === WFILTER)
+               && (PFILTER === "all" || t.cat === PFILTER);
 
 /* Counts are OPEN work only. Counting everything would make a person's number
    grow as they finished things, which is backwards. */
@@ -988,12 +1012,56 @@ function detailView(t){
    The hub's other pages. Three do not exist yet and say so rather than
    linking nowhere — a dead link that looks live is worse than an honest
    "not built". */
+/* THE HIERARCHY: project first, its parts underneath. `cat` was the chip fill
+   until work type took that job, which freed it to become the thing it always
+   really was — which project this belongs to. Only Guess When has parts beyond
+   the board so far; the others say so by having none rather than by showing
+   four dead links each. */
 const SECTIONS = [
   {id:"",             icon:"◧", name:"Progress",     live:true},
   {id:"pipeline",     icon:"❡", name:"Article pipeline"},
   {id:"firebase",     icon:"◆", name:"Firebase"},
   {id:"architecture", icon:"⌘", name:"Architecture"}
 ];
+const PROJECTS = {
+  gw:    {name:"Guess When", parts:SECTIONS},
+  admin: {name:"Admin",      parts:[SECTIONS[0]]},
+  site:  {name:"Sites",      parts:[SECTIONS[0]]},
+  park:  {name:"Parked",     parts:[SECTIONS[0]]}
+};
+let PFILTER = "all";
+try { PFILTER = localStorage.getItem("proj") || "all"; } catch(e){}
+if (PFILTER !== "all" && !PROJECTS[PFILTER]) PFILTER = "all";
+
+function projCount(c){
+  const hit = t => (c === "all" || t.cat === c) &&
+                   (FILTER === "all" || whoOf(t) === FILTER);
+  return TASKS.filter(x => hit(x) && x.pct < 100).length +
+         PROCESSES.filter(x => hit(x) && x.from !== "launch").length;
+}
+function projButtons(active){
+  const row = (id, name, glyph) =>
+    '<button class="ptab proj' + (PFILTER === id ? " on" : "") + '" data-proj="' + id + '">' +
+      '<i class="pg">' + glyph + "</i><span>" + name + "</span>" +
+      "<b>" + projCount(id) + "</b></button>";
+  let h = row("all", "All work", "◈");
+  for (const [id,pr] of Object.entries(PROJECTS)){
+    h += row(id, pr.name, GLYPH[id]);
+    // parts appear only under the project you are actually in
+    if (PFILTER === id && pr.parts.length > 1)
+      h += '<div class="parts">' + pr.parts.map(x =>
+        '<a href="#/' + x.id + '"' + (active === x.id ? ' aria-current="page"' : "") +
+        (x.live ? "" : ' class="soon"') + '><i>' + x.icon + "</i>" + x.name + "</a>").join("") + "</div>";
+  }
+  return h;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-proj]");
+  if (!b) return;
+  PFILTER = b.dataset.proj;
+  try { localStorage.setItem("proj", PFILTER); } catch(err){}
+  route();
+});
 function renderPeopleRail(){
   return "<h3>Person</h3>" + ["all", ...Object.keys(PEOPLE)].map(id =>
     '<button class="ptab' + (FILTER === id ? " on" : "") + '" data-who="' + id + '">' +
@@ -1004,13 +1072,13 @@ function renderPeopleRail(){
 }
 function renderRail(active){
   const el = document.getElementById("rail");
-  el.innerHTML = "<h3>Sections</h3>" +
+  el.innerHTML = "<h3>Projects</h3>" + projButtons(active) + '<div class="legacy" hidden>' +
     SECTIONS.map(s => s.live
       ? '<a href="#/' + s.id + '"' + (active === s.id ? ' aria-current="page"' : "") +
         '><i>' + s.icon + "</i>" + s.name + "</a>"
       : '<a class="soon" href="#/' + s.id + '"' + (active === s.id ? ' aria-current="page"' : "") +
         '><i>' + s.icon + "</i>" + s.name + "</a>"
-    ).join("");
+    ).join("") + "</div>";
   // filters belong to the list; a detail page has nothing to filter
   if (active === ""){
     const people = document.createElement("section");
@@ -1237,7 +1305,9 @@ function route(){
     tabsEl.hidden = false;
     renderTabs();
     renderRail("");
-    wrap.innerHTML = '<div class="wstrip">' + workButtons() + "</div>" + listView() + stashBanner();
+    wrap.innerHTML = '<div class="wstrip pstrip">' + projButtons(null) + "</div>" +
+                     '<div class="wstrip">' + workButtons() + "</div>" +
+                     listView() + stashBanner();
     renderCal();
     scrollTo(0, listScroll);
   }
