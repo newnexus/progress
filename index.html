@@ -321,6 +321,16 @@ const TASKS = [
    sub:[["Grey/green/blue/purple/gold",1],["Backpack, map chips, shop cards",1],["Weight the offer pool by rarity",0]],
    log:[["2026-08-11","The ladder had to be INVERTED on the shop card — it is cream paper, not the dark board, and the light tints that glow in the backpack were unreadable on it."]]},
 
+  {id:"tiers", d:"2026-08-11", cat:"gw", pct:35, size:"major", t:"Card tiers for new players",
+   done:"A new player only ever sees the tier-1 cards, and later tiers unlock as they level.",
+   note:"The tier is nested like Wikipedia's own vital-article levels, so a later tier can never take a card away from somebody who already had it. The daily ignores tiers on purpose — an identical deck for everybody is what its percentile means.",
+   sub:[["Judge and select the first 200",1],["Decide whether to merge the staged cards",0],["Write the tier onto the deck and upload",0],["Field, mask and cache schema on the client",0],["Gate the deck by player level",0]],
+   log:[["2026-08-11","200 selected, quota met in all eleven eras, -3000 to 2022. Eleven agents judged 740 candidates on whether a normal person could PLACE the card, not on whether it mattered."],
+        ["2026-08-11","The rejections were worth more than the selection: 196 of them, and they found cards that are simply wrong. 'Istanbul is founded, 1453' is the Ottoman conquest."],
+        ["2026-08-11","The deck's biggest failure mode is the country-founding card — ten more date clusters like the football clubs, including sixteen Latin American independences with five on 1821."],
+        ["2026-08-11","Two independent methods agreed: the judges were blind to the numbers, yet tier 1 has double the sitelinks and four times the page views of everything else."],
+        ["2026-08-11","Not applied. 85 of the 200 are staged cards nobody has merged, so writing the tier now would quietly demote them."]]},
+
   {id:"place", d:"2026-08-13", cat:"gw", pct:0, size:"moderate", t:"Component placement",
    done:"Layout settled at both screen widths.",
    note:"After the drag, because the drag decides what space the layout has to work around.",
