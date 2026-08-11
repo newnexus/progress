@@ -483,7 +483,7 @@ const TASKS = [
    needs:["track"],
    sub:[["Prototype the projection",0],["Play it on a phone",0],["Keep or revert",0]]},
 
-  {id:"reveal", d:"2026-08-11", cat:"gw", pct:90, size:"moderate", t:"Relic year reveals",
+  {id:"reveal", work:"script", d:"2026-08-11", cat:"gw", pct:90, size:"moderate", t:"Relic year reveals",
    done:"Relics in a run uncover parts of the year, and the card shows it.",
    note:"The tab reads as a tab now because it has paper under it. A shape with no edges has no correct position — which is why the old one was 'troublesome to position' and got deleted.",
    sub:[["Bring the ???? tab back",1],["Reveal model on the controller",1],["Watermark, colophon, era seal",1],["Tune the prices against real runs",0]],
@@ -491,18 +491,18 @@ const TASKS = [
         ["2026-08-11","The mask LENGTH is itself a reveal — how many digits a year has is its millennium. Four marks until the first digit is bought, an ellipsis when only the last two are."],
         ["2026-08-11","Caught a fairness bug: watermark + colophon spell out any year of 3 digits or fewer, so 44 BC printed '44' and read as AD 44."]]},
 
-  {id:"palimpsest", d:"2026-08-11", cat:"gw", pct:100, size:"minor", t:"Comeback relic",
+  {id:"palimpsest", work:"script", d:"2026-08-11", cat:"gw", pct:100, size:"minor", t:"Comeback relic",
    done:"A relic softens each miss that follows another, capped so no build is unloseable.",
    note:"The only relic that pays for going badly — every other one is worth most to a player already winning.",
    log:[["2026-08-11","15% per consecutive miss beyond the first. Combined shield cap stays 80% so two shields plus a losing streak cannot reach a run that cannot be lost."]]},
 
-  {id:"rarity", d:"2026-08-11", cat:"gw", pct:75, size:"minor", t:"Relic rarity ladder",
+  {id:"rarity", work:"script", d:"2026-08-11", cat:"gw", pct:75, size:"minor", t:"Relic rarity ladder",
    done:"Rarity is visible everywhere a relic appears, and the offer pool respects it.",
    note:"Colour first, drop rates later: a wrong colour is a cosmetic bug, a wrong drop rate hides inside a hundred runs.",
    sub:[["Grey/green/blue/purple/gold",1],["Backpack, map chips, shop cards",1],["Weight the offer pool by rarity",0]],
    log:[["2026-08-11","The ladder had to be INVERTED on the shop card — it is cream paper, not the dark board, and the light tints that glow in the backpack were unreadable on it."]]},
 
-  {id:"pipeline", d:"2026-08-11", cat:"gw", pct:30, size:"major", t:"Card pipeline: one written process",
+  {id:"pipeline", work:"script", d:"2026-08-11", cat:"gw", pct:30, size:"major", t:"Card pipeline: one written process",
    done:"An agent can be handed a batch with no context and do the right thing, and a failed card is parked with a reason rather than retried forever.",
    note:"The spec lives beside the data it governs, not here — it has to version with the schema, and an agent should never need a network fetch to read the rules it must follow. This page links to it.",
    sub:[["Write the spec: stages, gates, provenance",1],["Markdown to HTML so it is readable",1],["Per-card state file",0],["Batch dispenser so the rules cannot be skipped",0],["Move images to R2",0]],
@@ -512,7 +512,7 @@ const TASKS = [
         ["2026-08-11","A failed card is PARKED, not dropped. Without that there is no way to tell 'not reached yet' from 'looked at and correctly rejected', so every future session pays to reach the same answer."],
         ["2026-08-11","Images move to Cloudflare R2. Not a compliance fix — Wikimedia's policy does not forbid hotlinking — but we cannot pick our own sizes today, and a Commons rename silently breaks a card."]]},
 
-  {id:"tiers", d:"2026-08-11", cat:"gw", pct:35, size:"major", t:"Card tiers for new players",
+  {id:"tiers", work:"script", d:"2026-08-11", cat:"gw", pct:35, size:"major", t:"Card tiers for new players",
    done:"A new player only ever sees the tier-1 cards, and later tiers unlock as they level.",
    note:"The tier is nested like Wikipedia's own vital-article levels, so a later tier can never take a card away from somebody who already had it. The daily ignores tiers on purpose — an identical deck for everybody is what its percentile means.",
    sub:[["Judge and select the first 200",1],["Decide whether to merge the staged cards",0],["Write the tier onto the deck and upload",0],["Field, mask and cache schema on the client",0],["Gate the deck by player level",0]],
@@ -581,17 +581,17 @@ const TASKS = [
      from    "launch" = does not start until the game ships
    ========================================================== */
 const PROCESSES = [
-  {id:"reviews", cat:"gw", size:"moderate", t:"Reply to store reviews",
+  {id:"reviews", work:"market", cat:"gw", size:"moderate", t:"Reply to store reviews",
    every:"continuous", last:"", next:"", from:"launch",
    healthy:"No review sits more than a couple of days without a reply.",
    note:"Starts the day it goes to production. Early reviews carry the most weight and are the cheapest to answer."},
 
-  {id:"events", cat:"gw", size:"major", t:"Run seasonal events",
+  {id:"events", work:"market", cat:"gw", size:"major", t:"Run seasonal events",
    every:"per season", last:"", next:"", from:"launch",
    healthy:"Something new to come back for, on a rhythm players can predict.",
    note:"Live-ops. The reason a returning player has a reason. Not before launch."},
 
-  {id:"pass", cat:"gw", size:"major", t:"Battlepass cycles",
+  {id:"pass", work:"market", cat:"gw", size:"major", t:"Battlepass cycles",
    every:"per season", last:"", next:"", from:"launch",
    healthy:"A cycle never ends without the next one ready.",
    note:"A dead pass between seasons is worse than no pass. Only worth starting once retention justifies it."},
