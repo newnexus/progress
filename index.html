@@ -256,6 +256,34 @@
     background:var(--drop,rgba(41,118,210,.10));
     border-radius:10px;outline:1.5px dashed var(--gw-a);outline-offset:2px;
   }
+  .addhere{
+    appearance:none;border:0;background:none;cursor:pointer;font:inherit;
+    color:var(--ink-muted);font-size:16px;line-height:1;padding:2px 6px;
+    border-radius:7px;opacity:0;transition:opacity .12s;
+  }
+  .dh:hover .addhere,.addhere:focus{opacity:1}
+  .addhere:hover{background:var(--surface);color:var(--ink)}
+  /* touch has no hover, so the button cannot hide behind one */
+  @media (hover:none){ .addhere{opacity:.55} }
+
+  .composer{
+    background:var(--surface);border:1px solid var(--ring);border-radius:14px;
+    padding:11px 12px;display:flex;flex-direction:column;gap:8px;
+  }
+  .composer input[name="t"]{
+    font:inherit;font-size:14px;color:var(--ink);background:none;border:0;
+    outline:0;padding:3px 2px;
+  }
+  .composer .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .composer select{
+    font:inherit;font-size:12px;color:var(--ink-2);background:var(--plane);
+    border:1px solid var(--ring);border-radius:7px;padding:5px 7px;
+  }
+  .composer button{
+    font:inherit;font-size:12px;cursor:pointer;border:0;border-radius:7px;
+    padding:6px 12px;background:var(--ink);color:var(--plane);font-weight:650;
+  }
+  .composer button.x{background:none;color:var(--ink-muted);margin-left:auto;font-weight:500}
   .day.jump{animation:jump 1.1s ease-out}
   @keyframes jump{0%,22%{background:var(--drop,rgba(41,118,210,.14))}100%{background:transparent}}
   .stash{
@@ -735,11 +763,30 @@ try {
     if (old) EDITS.names = old;
   }
 } catch(e){}
+if (!Array.isArray(EDITS.added)) EDITS.added = [];
+/* A task you added is pushed into TASKS itself rather than kept in a parallel
+   list. Everything downstream — filters, counts, the calendar, drag, rename,
+   the detail route — then works on it for free, instead of each one needing to
+   learn about a second source of tasks. */
+for (const t of EDITS.added){ TASKS.push(t); BY_ID[t.id] = t; }
 const saveEdits = () => { try { localStorage.setItem(EDITS_KEY, JSON.stringify(EDITS)); } catch(e){} };
+
+function newId(title){
+  const base = (title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "task").slice(0,18);
+  let id = base, n = 2;
+  while (BY_ID[id]) id = base + "-" + n++;      // ids are the routing key, so they must not collide
+  return id;
+}
+function addTask(d, fields){
+  const t = {id:newId(fields.t), d, cat:fields.cat, work:fields.work,
+             size:fields.size, pct:0, t:fields.t, who:fields.who, _new:true};
+  EDITS.added.push(t); TASKS.push(t); BY_ID[t.id] = t;
+  saveEdits();
+}
 
 const titleOf = t => EDITS.names[t.id] || t.t;
 const dateOf  = t => (t.id in EDITS.dates) ? EDITS.dates[t.id] : t.d;
-const editCount = () => Object.keys(EDITS.names).length + Object.keys(EDITS.dates).length;
+const editCount = () => Object.keys(EDITS.names).length + Object.keys(EDITS.dates).length + EDITS.added.length;
 
 function setTitle(id, text){
   const orig = BY_ID[id]; if (!orig) return;
@@ -891,7 +938,8 @@ function listView(){
     return '<section class="day ' + cls + '" data-d="' + d + '"><div class="dh">' +
       '<span class="dd">' + dt.getDate() + " " + MO[dt.getMonth()] + "</span>" +
       '<span class="dw">' + WD[dt.getDay()] + "</span>" + flag +
-      (note ? '<span class="note">' + note + "</span>" : "") + "</div>" +
+      (note ? '<span class="note">' + note + "</span>" : "") +
+      '<button class="addhere" data-add="' + d + '" title="Add a task here">+</button>' + "</div>" +
       '<div class="slot">' + (byDay[d] || []).map(chip).join("") + "</div></section>";
   }
   function rangeLabel(a,b){
@@ -1180,6 +1228,52 @@ function beginRename(pill){
   inp.addEventListener("dblclick", ev => ev.stopPropagation());
 }
 
+/* ---------------- adding a task ----------------
+   The form opens INSIDE the day you pressed + on, so the date is chosen by
+   where you clicked rather than by a field you have to fill in and can get
+   wrong. Everything else defaults to whatever the current filters are set to:
+   if you are looking at Guess When scripting work, that is almost certainly
+   what you are about to add. */
+function openComposer(d){
+  document.querySelector(".composer")?.remove();
+  const slot = document.querySelector('.day[data-d="' + d + '"] .slot');
+  if (!slot) return;
+  const sel = (name, obj, cur) => '<select name="' + name + '">' +
+    Object.entries(obj).map(([k,v]) =>
+      '<option value="' + k + '"' + (k === cur ? " selected" : "") + ">" +
+      esc(v.name || v) + "</option>").join("") + "</select>";
+
+  const box = document.createElement("form");
+  box.className = "composer";
+  box.innerHTML =
+    '<input name="t" placeholder="What needs doing?" autocomplete="off" required>' +
+    '<div class="row">' +
+      sel("cat",  CATS,   PFILTER !== "all" ? PFILTER : "gw") +
+      sel("work", WORKS,  WFILTER !== "all" ? WFILTER : "script") +
+      sel("size", {minor:"Minor", moderate:"Moderate", major:"Major"}, "moderate") +
+      sel("who",  PEOPLE, FILTER  !== "all" ? FILTER  : DEFAULT_WHO) +
+      '<button type="submit">Add</button>' +
+      '<button type="button" class="x">Cancel</button>' +
+    "</div>";
+  slot.append(box);
+  box.querySelector("input").focus();
+
+  box.addEventListener("submit", ev => {
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(box).entries());
+    if (!f.t.trim()) return;
+    addTask(d, {t:f.t.trim(), cat:f.cat, work:f.work, size:f.size, who:f.who});
+    route();
+    openComposer(d);                     // stay open — adding one usually means adding three
+  });
+  box.querySelector(".x").addEventListener("click", () => { box.remove(); });
+  box.addEventListener("keydown", ev => { if (ev.key === "Escape") box.remove(); });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-add]");
+  if (b) openComposer(b.dataset.add);
+});
+
 /* ---------------- drag a chip to another day ----------------
    HTML5 drag-and-drop is not an option: it has no touch support. Pointer
    events with two entry points — the grip commits at once (touch-action:none
@@ -1290,8 +1384,10 @@ let listScroll = 0;
 function stashBanner(){
   const n = editCount();
   if (!n) return "";
-  const nn = Object.keys(EDITS.names).length, nd = Object.keys(EDITS.dates).length;
+  const nn = Object.keys(EDITS.names).length, nd = Object.keys(EDITS.dates).length,
+        na = EDITS.added.length;
   const bits = [];
+  if (na) bits.push(na + " new task" + (na>1?"s":""));
   if (nn) bits.push(nn + " rename" + (nn>1?"s":""));
   if (nd) bits.push(nd + " date" + (nd>1?"s":"") + " moved");
   return '<div class="stash"><span><b>' + bits.join(" · ") +
@@ -1340,6 +1436,14 @@ document.addEventListener("click", e => {
   if (e.target.closest(".go")) listScroll = scrollY;
   if (e.target.id === "stashcopy"){
     const rows = [];
+    // a new task exports as a pasteable TASKS entry, not as a diff
+    for (const t of EDITS.added){
+      const o = {id:t.id, work:t.work, d:t.d, cat:t.cat, pct:0, size:t.size, t:t.t};
+      if (t.who && t.who !== DEFAULT_WHO) o.who = t.who;
+      rows.push("  " + JSON.stringify(o) + ",");
+    }
+    if (EDITS.added.length && (Object.keys(EDITS.names).length || Object.keys(EDITS.dates).length))
+      rows.push("\n  /* and edits to existing entries: */");
     for (const [k,v] of Object.entries(EDITS.names)) rows.push("  " + k + "  t: " + JSON.stringify(v));
     for (const [k,v] of Object.entries(EDITS.dates)) rows.push("  " + k + "  d: " + JSON.stringify(v));
     const line = "/* apply these to the matching entries in TASKS */\n" + rows.join("\n");
