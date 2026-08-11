@@ -987,12 +987,27 @@ document.addEventListener("pointerdown", e => {
   const start = {x:e.clientX, y:e.clientY};
   if (e.target.closest(".grip")){ begin(pill, id, start); return; }
 
+  /* MOUSE AND TOUCH WANT OPPOSITE RULES, and conflating them is what broke
+     this the first time.
+       touch — moving your finger means SCROLL, so a hold starts the drag and
+               any movement before it cancels;
+       mouse — press-and-move IS the drag gesture, nobody scrolls by dragging
+               content, so movement STARTS it and there is no delay to sit
+               through.
+     Written as one path with a cancel, a desktop drag never begins: the first
+     mouse movement trips the same guard that protects scrolling on a phone. */
+  const isMouse = e.pointerType === "mouse";
   let live = true;
-  const timer = setTimeout(() => { if (live) begin(pill, id, start); }, HOLD);
+  const timer = isMouse ? 0 : setTimeout(() => { if (live) begin(pill, id, start); }, HOLD);
   const stop = () => { live = false; clearTimeout(timer);
     removeEventListener("pointermove", watch); removeEventListener("pointerup", stop);
     removeEventListener("pointercancel", stop); };
-  const watch = ev => { if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) > SLOP) stop(); };
+  const watch = ev => {
+    if (!live) return;
+    if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) <= SLOP) return;
+    if (isMouse){ stop(); begin(pill, id, {x:ev.clientX, y:ev.clientY}); }
+    else stop();                       // the finger is scrolling, let it
+  };
   addEventListener("pointermove", watch, {passive:true});
   addEventListener("pointerup", stop, {passive:true});
   addEventListener("pointercancel", stop, {passive:true});
