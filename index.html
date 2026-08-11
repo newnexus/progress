@@ -78,20 +78,26 @@
 
   /* ---------------- desktop shell ----------------
      Phone stays exactly as it was: one column, the rails simply absent. The
-     side columns only exist above 1000px, where there is room for them
+     side columns only exist above 1080px, where there is room for them
      WITHOUT squeezing the feed — the feed keeps its 600px either way, so the
      chips never reflow between layouts. */
   .shell{display:block}
   .rail,.cal{display:none}
   /* WIDTH ALONE IS NOT "IS THIS A PC". Media queries measure CSS pixels, so a
      1440x2560 phone at DPR 3-4 reports ~360-480 portrait and ~850 landscape —
-     it would never match 1000px anyway. But hover:hover is the honest test:
+     it would never match 1080px anyway. But hover:hover is the honest test:
      it asks whether there is a cursor, which is what a side rail actually
      needs. A phone answers hover:none however many physical pixels it has. */
-  @media (min-width:1000px) and (hover:hover){
+  @media (min-width:1080px) and (hover:hover){
     .shell{
       display:grid;justify-content:center;align-items:start;
-      grid-template-columns:186px minmax(0,600px) 250px;
+      /* Rails scale with the window between a floor and a ceiling instead of
+         sitting at one fixed width. The floor plus the feed plus the gaps is
+         1072px, which is why the breakpoint is 1080 and not 1000 — at 1000 the
+         old fixed columns already totalled 1088 and the FEED was the thing
+         being squeezed, since it is the only flexible track. */
+      grid-template-columns:
+        clamp(190px, 17vw, 250px) minmax(0,600px) clamp(230px, 21vw, 320px);
       gap:0 26px;
     }
     .rail,.cal{display:block;position:sticky;top:18px;padding-top:22px}
@@ -162,7 +168,7 @@
   }
   /* the nested parts are a desktop affordance; the phone strip is one level */
   .pstrip .parts{display:none}
-  @media (min-width:1000px) and (hover:hover){ .wstrip{display:none} }
+  @media (min-width:1080px) and (hover:hover){ .wstrip{display:none} }
 
   /* filter rows in the rail — same shape as the section links so the whole
      column reads as one list rather than three unrelated widgets */
@@ -185,14 +191,14 @@
   /* right rail — month at a glance, clicking a day jumps to it */
   .cal .mon{
     background:var(--surface);border:1px solid var(--ring);border-radius:12px;
-    padding:11px 12px 12px;margin-bottom:10px;
+    padding:13px 14px 14px;margin-bottom:11px;
   }
-  .cal .mt{font-size:12.5px;font-weight:650;margin:0 0 8px;text-align:center}
-  .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-  .cal .dow{font-size:9px;color:var(--ink-muted);text-align:center;font-weight:700;padding-bottom:3px}
+  .cal .mt{font-size:13px;font-weight:650;margin:0 0 9px;text-align:center}
+  .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .cal .dow{font-size:9.5px;color:var(--ink-muted);text-align:center;font-weight:700;padding-bottom:4px}
   .cal button{
     appearance:none;border:0;background:none;font:inherit;cursor:pointer;
-    aspect-ratio:1;border-radius:6px;font-size:11px;color:var(--ink-2);
+    aspect-ratio:1;border-radius:7px;font-size:12px;color:var(--ink-2);
     display:flex;align-items:center;justify-content:center;position:relative;padding:0;
   }
   .cal button:disabled{color:var(--ink-muted);opacity:.3;cursor:default}
@@ -201,7 +207,7 @@
   /* a dot means work sits on that day — the number alone cannot say that */
   .cal button.has::after{
     content:"";position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
-    width:3px;height:3px;border-radius:50%;background:var(--gw-a);
+    width:3.5px;height:3.5px;border-radius:50%;background:var(--gw-a);
   }
   .cal button.today{background:var(--ink);color:var(--plane);font-weight:700}
   .cal button.today.has::after{background:var(--plane)}
