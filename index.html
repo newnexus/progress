@@ -321,6 +321,16 @@ const TASKS = [
    sub:[["Grey/green/blue/purple/gold",1],["Backpack, map chips, shop cards",1],["Weight the offer pool by rarity",0]],
    log:[["2026-08-11","The ladder had to be INVERTED on the shop card — it is cream paper, not the dark board, and the light tints that glow in the backpack were unreadable on it."]]},
 
+  {id:"pipeline", d:"2026-08-11", cat:"gw", pct:30, size:"major", t:"Card pipeline: one written process",
+   done:"An agent can be handed a batch with no context and do the right thing, and a failed card is parked with a reason rather than retried forever.",
+   note:"The spec lives beside the data it governs, not here — it has to version with the schema, and an agent should never need a network fetch to read the rules it must follow. This page links to it.",
+   sub:[["Write the spec: stages, gates, provenance",1],["Markdown to HTML so it is readable",1],["Per-card state file",0],["Batch dispenser so the rules cannot be skipped",0],["Move images to R2",0]],
+   links:[["PIPELINE.md","https://github.com/newnexus/guess-when/blob/main/Tools/PIPELINE.md"]],
+   log:[["2026-08-11","Seven stages, ordered by how expensive each is to redo. Translation is last of the text stages: any English edit after it silently invalidates every language."],
+        ["2026-08-11","Stages are FAT on purpose — an agent that has read the article should fix the title, the description and the hints in one visit, not be asked to read it three times."],
+        ["2026-08-11","A failed card is PARKED, not dropped. Without that there is no way to tell 'not reached yet' from 'looked at and correctly rejected', so every future session pays to reach the same answer."],
+        ["2026-08-11","Images move to Cloudflare R2. Not a compliance fix — Wikimedia's policy does not forbid hotlinking — but we cannot pick our own sizes today, and a Commons rename silently breaks a card."]]},
+
   {id:"tiers", d:"2026-08-11", cat:"gw", pct:35, size:"major", t:"Card tiers for new players",
    done:"A new player only ever sees the tier-1 cards, and later tiers unlock as they level.",
    note:"The tier is nested like Wikipedia's own vital-article levels, so a later tier can never take a card away from somebody who already had it. The daily ignores tiers on purpose — an identical deck for everybody is what its percentile means.",
