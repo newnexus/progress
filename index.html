@@ -291,8 +291,10 @@ const TASKS = [
    note:"ESTIMATE — 31 items left, but the starting total was never recorded. Correct it.",
    sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
 
-  {id:"email", d:"2026-08-11", cat:"gw", pct:0, size:"minor", t:"Fix store support-email typo",
-   done:"The listed address is one that is actually monitored."},
+  {id:"email", d:"2026-08-11", cat:"gw", pct:100, size:"minor", t:"Fix store support-email typo",
+   done:"The listed address is one that is actually monitored.",
+   note:"Verified 11 Aug against the live Play API and both privacy pages — every one of them already reads kozzzygames@gmail.com, and the two-z spelling appears in no file anywhere. Either it was fixed unlogged or the original sighting was wrong.",
+   log:[["2026-08-11","Checked rather than assumed: edits.details.get returns contactEmail=kozzzygames@gmail.com. Nothing to change."]]},
 
   {id:"drag", d:"2026-08-11", cat:"gw", pct:0, size:"major", t:"Drag and prediction projection",
    done:"Clearly better on a phone by the 13th — or reverted. Not 'perfect'.",
