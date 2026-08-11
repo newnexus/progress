@@ -68,7 +68,12 @@
      chips never reflow between layouts. */
   .shell{display:block}
   .rail,.cal{display:none}
-  @media (min-width:1000px){
+  /* WIDTH ALONE IS NOT "IS THIS A PC". Media queries measure CSS pixels, so a
+     1440x2560 phone at DPR 3-4 reports ~360-480 portrait and ~850 landscape —
+     it would never match 1000px anyway. But hover:hover is the honest test:
+     it asks whether there is a cursor, which is what a side rail actually
+     needs. A phone answers hover:none however many physical pixels it has. */
+  @media (min-width:1000px) and (hover:hover){
     .shell{
       display:grid;justify-content:center;align-items:start;
       grid-template-columns:186px minmax(0,600px) 250px;
