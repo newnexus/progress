@@ -1057,11 +1057,10 @@ try { ROLL = localStorage.getItem("roll") === "1"; } catch(e){}
 
 /* A day you cannot work is not a day to roll onto. Shift nights and away days
    are skipped, so overdue work lands on the next day he could actually do it. */
-const dayBlocked = d => {
-  const note = (DAYNOTES[d] || "").toLowerCase();
-  if (note.includes("shift") || note.includes("away")) return true;
-  return (typeof AWAY !== "undefined" ? AWAY : []).some(r => d >= r.from && d <= r.to);
-};
+/* One definition of "can he work on this day", shared with the calendar
+   colours. Anything not free is skipped: rolling a desk task onto a shift
+   night or onto Greece only moves the lie forward. */
+const dayBlocked = d => busyOf(d) !== "free";
 function nextOpenDay(from){
   let d = from;
   for (let i = 0; i < 60; i++){          // bounded: never loop looking for a free day
