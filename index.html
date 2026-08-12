@@ -250,7 +250,24 @@
   }
   .cal button.today{background:var(--ink);color:var(--plane);font-weight:700}
   .cal button.today.has::after{background:var(--plane)}
-  .cal button.away{opacity:.42}
+  /* Ordered severity: free -> half -> booked. Tints rather than solid fills,
+     so the day number keeps normal ink contrast at every level. */
+  .cal button.b-free{background:rgba(92,129,37,.20)}
+  .cal button.b-half{background:rgba(232,189,34,.28)}
+  .cal button.b-full{
+    background:repeating-linear-gradient(135deg,
+      rgba(192,58,58,.34) 0 4px, rgba(192,58,58,.16) 4px 8px);
+    color:var(--ink);
+  }
+  .cal button.today{background:var(--ink);color:var(--plane);font-weight:700}
+  .blegend{display:flex;flex-wrap:wrap;gap:4px 11px;padding:6px 2px 2px;
+           font-size:10.5px;color:var(--ink-muted)}
+  .blegend span{display:inline-flex;align-items:center;gap:5px}
+  .blegend .bs{width:10px;height:10px;border-radius:3px;flex:none}
+  .blegend .bs.b-free{background:rgba(92,129,37,.55)}
+  .blegend .bs.b-half{background:rgba(232,189,34,.75)}
+  .blegend .bs.b-full{background:repeating-linear-gradient(135deg,
+    rgba(192,58,58,.85) 0 3px, rgba(192,58,58,.4) 3px 6px)}
   .cal .key{font-size:10.5px;color:var(--ink-muted);padding:2px 2px 0;line-height:1.7}
   .cal .key b{color:var(--ink-2);font-weight:600}
 
@@ -740,6 +757,25 @@ const DAYNOTES = {
   "2026-08-29":"ship decision", "2026-09-05":"hard wall"
 };
 const HORIZON = 21;
+
+/* HOW BUSY A DAY IS — a three-step scale, not four categories, which is why
+   green/amber/red is the right encoding here: it is ordered severity and the
+   traffic light is the one place that convention is genuinely universal.
+   Colour is still not alone — "full" is hatched, and the legend names each. */
+const BUSY = [
+  {from:"2026-09-15", to:"2026-09-29", level:"full", what:"Greece"},
+  {from:"2026-09-30", to:"2026-10-24", level:"half", what:"Farm season"}
+];
+/* A shift night is HALF: he is at the warehouse, but he has a phone, and the
+   whole phone-task queue exists because those hours are usable. Calling them
+   full would hide six hours a week he actually works in. */
+function busyOf(d){
+  for (const r of BUSY) if (d >= r.from && d <= r.to) return r.level;
+  const note = (DAYNOTES[d] || "").toLowerCase();
+  if (note.includes("shift")) return "half";
+  return "free";
+}
+const BUSY_LABEL = {free:"Free", half:"Half busy", full:"Booked"};
 
 const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
 const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
@@ -1404,11 +1440,12 @@ function renderRail(active){
 function renderCal(){
   const byDay = {};
   for (const t of TASKS.filter(mine)) if (dateOf(t)) (byDay[dateOf(t)] ||= []).push(t);
-  const away = d => (typeof AWAY !== "undefined" ? AWAY : []).some(r => d >= r.from && d <= r.to);
 
   let html = "<h3>Calendar</h3>";
   const start = parse(TODAY);
-  for (let k = 0; k < 2; k++){
+  // three, not two: the whole away block runs into October and a calendar
+  // that stops in September hides the half of it that is farm work
+  for (let k = 0; k < 3; k++){
     const y = start.getFullYear(), m = start.getMonth() + k;
     const first = new Date(y, m, 1), total = new Date(y, m + 1, 0).getDate();
     const lead = (first.getDay() + 6) % 7;                    // Monday-first
@@ -1418,15 +1455,20 @@ function renderCal(){
       '<div style="grid-column:span ' + (lead || 7) + '"></div>'.repeat(lead ? 1 : 0);
     for (let n = 1; n <= total; n++){
       const key = first.getFullYear() + "-" + pad(first.getMonth()+1) + "-" + pad(n);
-      const cls = [byDay[key] ? "has" : "", key === TODAY ? "today" : "", away(key) ? "away" : ""]
-                    .filter(Boolean).join(" ");
+      const cls = [byDay[key] ? "has" : "", key === TODAY ? "today" : "",
+                 "b-" + busyOf(key)].filter(Boolean).join(" ");
       const n2 = (byDay[key] || []).length;
-      html += '<button data-d="' + key + '" class="' + cls + '"' +
-        (n2 ? ' title="' + n2 + ' task' + (n2>1?"s":"") + '"' : "") + ">" + n + "</button>";
+      const bl = BUSY_LABEL[busyOf(key)];
+      const tip = (n2 ? n2 + " task" + (n2>1?"s":"") + " · " : "") + bl;
+      html += '<button data-d="' + key + '" class="' + cls + '" title="' + tip + '">' +
+        n + "</button>";
     }
     html += "</div></div>";
   }
-  html += '<p class="key"><b>•</b> a day holding work · <b>tap</b> to jump to it</p>';
+  html += '<div class="blegend">' +
+    ["free","half","full"].map(l => '<span><i class="bs b-' + l + '"></i>' +
+      BUSY_LABEL[l] + "</span>").join("") + "</div>" +
+    '<p class="key"><b>•</b> a day holding work · <b>tap</b> to jump to it</p>';
   document.getElementById("cal").innerHTML = html;
 }
 document.getElementById("cal").addEventListener("click", e => {
