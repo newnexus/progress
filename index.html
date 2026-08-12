@@ -158,6 +158,7 @@
   .parts a.soon{opacity:.4}
   .parts a.soon:hover{background:none;color:var(--ink-2);cursor:default}
   .parts a i{font-style:normal;width:13px;text-align:center;font-size:11px;opacity:.7}
+  .parts .ext{margin-left:auto;font-size:10px;opacity:.5}
 
   /* the phone has no rail, so the type filter rides above the feed as a
      scrolling strip — and being swatch-plus-name, it is the legend too */
@@ -1156,7 +1157,7 @@ function detailView(t){
    four dead links each. */
 const SECTIONS = [
   {id:"",             icon:"◧", name:"Progress",     live:true},
-  {id:"pipeline",     icon:"❡", name:"Article pipeline"},
+  {id:"pipeline",     icon:"❡", name:"Article pipeline", href:"pipeline.html"},
   {id:"firebase",     icon:"◆", name:"Firebase"},
   {id:"architecture", icon:"⌘", name:"Architecture"}
 ];
@@ -1187,8 +1188,10 @@ function projButtons(active){
     // parts appear only under the project you are actually in
     if (PFILTER === id && pr.parts.length > 1)
       h += '<div class="parts">' + pr.parts.map(x =>
-        '<a href="#/' + x.id + '"' + (active === x.id ? ' aria-current="page"' : "") +
-        (x.live ? "" : ' class="soon"') + '><i>' + x.icon + "</i>" + x.name + "</a>").join("") + "</div>";
+        '<a href="' + (x.href || ("#/" + x.id)) + '"' +
+        (active === x.id ? ' aria-current="page"' : "") +
+        (x.href || x.live ? "" : ' class="soon"') + '><i>' + x.icon + "</i>" + x.name +
+        (x.href ? ' <span class="ext">↗</span>' : "") + "</a>").join("") + "</div>";
   }
   return h;
 }
