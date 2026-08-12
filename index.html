@@ -129,6 +129,14 @@
   .rail > .soon{opacity:.45}
   .rail > .soon:hover{background:none;color:var(--ink-2);cursor:default}
   .rail section{margin-top:20px}
+  .hidedone{
+    display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 12px;
+    background:var(--surface);border:1px solid var(--ring);border-radius:10px;
+    font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none;
+  }
+  .hidedone input{width:16px;height:16px;accent-color:var(--ink);margin:0;cursor:pointer}
+  .hidedone b{margin-left:auto;font-size:11.5px;font-weight:700;opacity:.55;
+              font-variant-numeric:tabular-nums}
   .ptab.proj .pg{
     flex:none;width:13px;text-align:center;font-size:10px;font-style:normal;opacity:.65;
   }
@@ -906,6 +914,37 @@ function chip(t){
 let FILTER = "all";
 try { FILTER = localStorage.getItem("who") || "all"; } catch(e){}
 if (FILTER !== "all" && !PEOPLE[FILTER]) FILTER = "all";
+/* Hiding done work is a VIEW, not a filter on the data — the counts and the
+   percentages still describe everything, because a board that quietly stopped
+   counting finished work would make progress unreadable. */
+let HIDEDONE = false;
+try { HIDEDONE = localStorage.getItem("hidedone") === "1"; } catch(e){}
+const isDone = t => (t.pct !== undefined) ? t.pct >= 100 : false;
+
+/* Rolling overdue work forward is a VIEW. It does NOT rewrite the stored date:
+   a board that silently moved dates would destroy the evidence of what slipped
+   and when, which is the one thing the log exists to keep. Turn it off and the
+   real dates are all still there. */
+let ROLL = false;
+try { ROLL = localStorage.getItem("roll") === "1"; } catch(e){}
+
+/* A day you cannot work is not a day to roll onto. Shift nights and away days
+   are skipped, so overdue work lands on the next day he could actually do it. */
+const dayBlocked = d => {
+  const note = (DAYNOTES[d] || "").toLowerCase();
+  if (note.includes("shift") || note.includes("away")) return true;
+  return (typeof AWAY !== "undefined" ? AWAY : []).some(r => d >= r.from && d <= r.to);
+};
+function nextOpenDay(from){
+  let d = from;
+  for (let i = 0; i < 60; i++){          // bounded: never loop looking for a free day
+    if (!dayBlocked(d)) return d;
+    d = addDays(d, 1);
+  }
+  return from;
+}
+const rollTo = () => nextOpenDay(TODAY);
+
 let WFILTER = "all";
 try { WFILTER = localStorage.getItem("work") || "all"; } catch(e){}
 if (WFILTER !== "all" && !WORKS[WFILTER]) WFILTER = "all";
@@ -948,6 +987,35 @@ function workButtons(){
       "<span>Add a type</span></button>");
 }
 function renderWorks(into){ into.innerHTML = "<h3>Work type</h3>" + workButtons(); }
+
+function rollToggle(){
+  const landing = rollTo();
+  const n = TASKS.filter(t => mine(t) && dateOf(t) && dateOf(t) < TODAY && !isDone(t)).length;
+  const where = landing === TODAY ? "today"
+    : (parse(landing).getDate() + " " + MO[parse(landing).getMonth()]);
+  return '<label class="hidedone"><input type="checkbox" id="roll"' +
+    (ROLL ? " checked" : "") + '><span>Roll overdue to ' + where + "</span>" +
+    "<b>" + n + "</b></label>";
+}
+document.addEventListener("change", e => {
+  if (e.target.id !== "roll") return;
+  ROLL = e.target.checked;
+  try { localStorage.setItem("roll", ROLL ? "1" : "0"); } catch(err){}
+  route();
+});
+
+function doneToggle(){
+  const n = TASKS.filter(t => mine(t) && isDone(t)).length;
+  return '<label class="hidedone"><input type="checkbox" id="hidedone"' +
+    (HIDEDONE ? " checked" : "") + "><span>Hide completed</span>" +
+    "<b>" + n + "</b></label>";
+}
+document.addEventListener("change", e => {
+  if (e.target.id !== "hidedone") return;
+  HIDEDONE = e.target.checked;
+  try { localStorage.setItem("hidedone", HIDEDONE ? "1" : "0"); } catch(err){}
+  route();
+});
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-work]");
   if (!b) return;
@@ -981,7 +1049,11 @@ function listView(){
   /* Filtering happens ONCE, here at the source. Everything downstream — the
      empty-day runs, the history block, the undated section — then collapses on
      its own, with no second idea of what is visible. */
-  const tasks = TASKS.filter(mine);
+  const tasks = TASKS.filter(mine).filter(t => !(HIDEDONE && isDone(t)));
+  const landing = rollTo();
+  // where a task DISPLAYS, which is not always where it is dated
+  const shownDay = t => (ROLL && dateOf(t) && dateOf(t) < TODAY && !isDone(t))
+    ? landing : dateOf(t);
 
   /* Processes sit below the timeline rather than on a day — they are not
      scheduled, they are kept up. Overdue and due-soon float to the top of
@@ -995,7 +1067,7 @@ function listView(){
            esc(PEOPLE[FILTER].name) + "</b> yet.</div>";
 
   const byDay = {};
-  for (const t of tasks) (byDay[dateOf(t)] ||= []).push(t);
+  for (const t of tasks) (byDay[shownDay(t)] ||= []).push(t);
 
   function block(d, cls){
     const dt = parse(d), note = DAYNOTES[d];
@@ -1157,10 +1229,11 @@ function detailView(t){
    four dead links each. */
 const SECTIONS = [
   {id:"",             icon:"◧", name:"Progress",     live:true},
-  {id:"pipeline",     icon:"❡", name:"Article pipeline", href:"pipeline.html"},
+  {id:"pipeline",     icon:"❡", name:"Pipeline flow",  href:"pipeline.html"},
+  {id:"pipeguide",    icon:"✎", name:"Pipeline guide", href:"pipeline-guide.html"},
   {id:"firebase",     icon:"◆", name:"Firebase"},
   {id:"architecture", icon:"⌘", name:"Architecture"},
-  {id:"pipedocs",     icon:"▤", name:"Pipeline docs", href:"pipeline-docs.html"}
+  {id:"pipedocs",     icon:"▤", name:"Pipeline spec",  href:"pipeline-docs.html"}
 ];
 const PROJECTS = {
   gw:    {name:"Guess When", parts:SECTIONS},
@@ -1533,7 +1606,7 @@ function route(){
     tabsEl.hidden = false;
     renderTabs();
     renderRail("");
-    wrap.innerHTML = '<div class="wstrip pstrip">' + projButtons(null) + "</div>" +
+    wrap.innerHTML = doneToggle() + rollToggle() + '<div class="wstrip pstrip">' + projButtons(null) + "</div>" +
                      '<div class="wstrip">' + workButtons() + "</div>" +
                      listView() + stashBanner();
     renderCal();
