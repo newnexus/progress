@@ -135,6 +135,21 @@
     font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none;
   }
   .hidedone input{width:16px;height:16px;accent-color:var(--ink);margin:0;cursor:pointer}
+  .caret{
+    appearance:none;border:0;background:none;cursor:pointer;font:inherit;
+    color:var(--on);opacity:.6;font-size:11px;line-height:1;padding:6px 4px;flex:none;
+  }
+  .caret:hover{opacity:1}
+  .pill.open .caret{transform:rotate(180deg)}
+  .fold{background:var(--surface);padding:12px 15px 14px;color:var(--ink-2)}
+  .fold .fnote{margin:0 0 10px;font-size:12.5px;color:var(--ink-muted);line-height:1.45}
+  .fold ul.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  .fold ul.steps li{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:baseline}
+  .fold .s{font-size:13px;line-height:1.35}
+  .fold li.on .s{color:var(--ink-muted);text-decoration:line-through;text-decoration-thickness:1px}
+  .fold .v{font-size:11.5px;font-weight:700;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+  .fold input[type=range]{grid-column:1/-1;width:100%;margin:0;accent-color:var(--ink);height:18px}
+  .fold .favg{margin:11px 0 0;font-size:11.5px;color:var(--ink-muted)}
   .hidedone b{margin-left:auto;font-size:11.5px;font-weight:700;opacity:.55;
               font-variant-numeric:tabular-nums}
   .ptab.proj .pg{
@@ -856,6 +871,30 @@ function addTask(d, fields){
 
 const titleOf = t => EDITS.names[t.id] || t.t;
 const dateOf  = t => (t.id in EDITS.dates) ? EDITS.dates[t.id] : t.d;
+if (!EDITS.steps) EDITS.steps = {};
+/* A step now carries its OWN percentage, and the task's number is the average
+   of them. Seeded from the old done/not-done flag so nothing starts blank.
+   Deriving beats authoring: a hand-typed 60% next to three untouched steps was
+   a guess, and the steps are the thing he actually knows about. */
+function stepPct(t, i){
+  const row = EDITS.steps[t.id];
+  if (row && row[i] !== undefined && row[i] !== null) return +row[i];
+  return (t.sub && t.sub[i] && t.sub[i][1]) ? 100 : 0;
+}
+function setStepPct(t, i, v){
+  const n = (t.sub || []).length;
+  const row = EDITS.steps[t.id] || (EDITS.steps[t.id] = Array.from({length:n}, (_, k) => stepPct(t, k)));
+  row[i] = Math.max(0, Math.min(100, Math.round(v)));
+  saveEdits();
+}
+function taskPct(t){
+  const n = (t.sub || []).length;
+  if (!n) return Math.max(0, Math.min(100, t.pct));
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += stepPct(t, i);
+  return Math.round(sum / n);
+}
+
 const editCount = () => Object.keys(EDITS.names).length + Object.keys(EDITS.dates).length +
                         EDITS.added.length + Object.keys(EDITS.works).length;
 
@@ -894,7 +933,7 @@ function chip(t){
         '<a class="go" href="#/t/' + t.id + '" aria-label="Open ' + esc(titleOf(t)) + '">›</a>' +
       "</div></article>";
   }
-  const pct = Math.max(0, Math.min(100, t.pct));
+  const pct = taskPct(t);
   return '<article class="pill cat-' + t.cat + " w" + slotOf(t.work) + " sz-" + t.size +
            '" style="--p:' + paintPct(pct) + '%">' +
       '<div class="top">' +
@@ -903,9 +942,61 @@ function chip(t){
         '<span class="lbl">' + esc(titleOf(t)) + "</span>" +
         '<span class="pct">' + pct + "%</span>" +
         avatar(t) +
+        ((t.sub && t.sub.length) || t.note
+          ? '<button class="caret" data-fold="' + t.id + '" aria-label="Show steps">▾</button>' : "") +
         '<a class="go" href="#/t/' + t.id + '" aria-label="Open ' + esc(titleOf(t)) + '">›</a>' +
-      "</div></article>";
+      "</div>" + foldHTML(t) + "</article>";
 }
+
+/* The foldout is a THIRD way into a task, beside the full page and the chip
+   itself, so it needs its own affordance: the caret. Reusing a click on the
+   body would collide with double-click-to-rename, and reusing the chevron
+   would take away the only route to the full page. */
+const OPEN = new Set();
+function foldHTML(t){
+  if (!OPEN.has(t.id)) return "";
+  const sub = t.sub || [];
+  const rows = sub.map((x, i) => {
+    const v = stepPct(t, i);
+    return '<li' + (v >= 100 ? ' class="on"' : "") + '>' +
+      '<span class="s">' + esc(x[0]) + "</span>" +
+      '<span class="v" data-v="' + t.id + "." + i + '">' + v + "%</span>" +
+      '<input type="range" min="0" max="100" step="5" value="' + v +
+        '" data-step="' + t.id + "." + i + '" aria-label="' + esc(x[0]) + '"></li>';
+  }).join("");
+  return '<div class="fold">' +
+    (t.note ? '<p class="fnote">' + esc(t.note) + "</p>" : "") +
+    (rows ? "<ul class=\"steps\">" + rows + "</ul>" +
+       '<p class="favg">Task percentage is the average of its steps.</p>' : "") +
+    "</div>";
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-fold]");
+  if (!b) return;
+  const id = b.dataset.fold;
+  OPEN.has(id) ? OPEN.delete(id) : OPEN.add(id);
+  route();
+});
+
+/* Updated IN PLACE rather than by re-rendering: a route() on every slider
+   movement would rebuild the DOM under the thumb and drop the drag. */
+document.addEventListener("input", e => {
+  const r = e.target.closest("[data-step]");
+  if (!r) return;
+  const [id, i] = r.dataset.step.split(".");
+  const t = BY_ID[id]; if (!t) return;
+  setStepPct(t, +i, +r.value);
+  const pct = taskPct(t);
+  const li = r.closest("li");
+  li.classList.toggle("on", +r.value >= 100);
+  li.querySelector(".v").textContent = r.value + "%";
+  const pill = r.closest(".pill");
+  pill.style.setProperty("--p", (pct === 0 ? 12 : pct) + "%");
+  const out = pill.querySelector(".pct");
+  if (out) out.textContent = pct + "%";
+  pill.classList.toggle("done", pct >= 100);
+});
 
 /* ---------------- who filter ----------------
    Kept in localStorage rather than the hash: the hash is the ROUTE, and a
@@ -919,7 +1010,7 @@ if (FILTER !== "all" && !PEOPLE[FILTER]) FILTER = "all";
    counting finished work would make progress unreadable. */
 let HIDEDONE = false;
 try { HIDEDONE = localStorage.getItem("hidedone") === "1"; } catch(e){}
-const isDone = t => (t.pct !== undefined) ? t.pct >= 100 : false;
+const isDone = t => (t.pct !== undefined) ? taskPct(t) >= 100 : false;
 
 /* Rolling overdue work forward is a VIEW. It does NOT rewrite the stored date:
    a board that silently moved dates would destroy the evidence of what slipped
@@ -1033,14 +1124,19 @@ function renderTabs(){
       "<span>" + esc(id === "all" ? "All" : PEOPLE[id].name) + "</span>" +
       '<span class="n">' + openCount(id) + "</span></button>").join("");
 }
-tabsEl.addEventListener("click", e => {
-  const b = e.target.closest(".tab");
+/* Delegated from the document, and matching [data-who] rather than one class:
+   the person filter exists in TWO places — the floating bar on a phone and the
+   rail on a desktop — and binding to the bar meant the rail buttons did
+   nothing at all on the machine he actually uses. route() re-renders
+   everything, so the counts, calendar and toggles move with it; the old
+   partial re-render also quietly dropped the banner and the strips. */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-who]");
   if (!b || b.dataset.who === FILTER) return;
   FILTER = b.dataset.who;
-  try { localStorage.setItem("who", FILTER); } catch(e){}
+  try { localStorage.setItem("who", FILTER); } catch(err){}
   listScroll = 0;              // the feed is a different length now
-  renderTabs();
-  wrap.innerHTML = listView();
+  route();
   scrollTo(0,0);
 });
 
