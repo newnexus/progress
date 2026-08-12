@@ -196,6 +196,11 @@
     background:linear-gradient(160deg,var(--a,var(--ink-muted)),var(--b,var(--ink-muted)));
   }
   .wtab .sw.all{background:linear-gradient(120deg,var(--w-script-a),var(--w-art-a) 55%,var(--w-market-a))}
+  .sw.w1{--a:var(--w-script-a);--b:var(--w-script-b)}
+  .sw.w2{--a:var(--w-ui-a);--b:var(--w-ui-b)}
+  .sw.w3{--a:var(--w-art-a);--b:var(--w-art-b)}
+  .sw.w4{--a:var(--w-market-a);--b:var(--w-market-b)}
+  .sw.w0{--a:var(--w-none-a);--b:var(--w-none-b)}
   .ptab .sw{border-radius:50%;background:var(--who)}
 
   /* right rail — month at a glance, clicking a day jumps to it */
@@ -284,6 +289,30 @@
     padding:6px 12px;background:var(--ink);color:var(--plane);font-weight:650;
   }
   .composer button.x{background:none;color:var(--ink-muted);margin-left:auto;font-weight:500}
+  .wtab.addtype{color:var(--ink-muted)}
+  .wtab .sw.plus{
+    display:flex;align-items:center;justify-content:center;background:none;
+    border:1px dashed var(--rule);color:var(--ink-muted);font-size:10px;line-height:1;
+  }
+  .typemaker{
+    margin:4px 0 4px 11px;padding:9px 10px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--ring);
+    display:flex;flex-direction:column;gap:7px;
+  }
+  .typemaker input[name="name"]{
+    font:inherit;font-size:12.5px;color:var(--ink);background:none;border:0;outline:0;
+  }
+  .typemaker .slots{display:flex;gap:7px}
+  .typemaker .slots input{position:absolute;opacity:0;pointer-events:none}
+  .typemaker .slots label{cursor:pointer;padding:2px;border-radius:6px;border:1.5px solid transparent}
+  .typemaker .slots label:has(input:checked){border-color:var(--ink)}
+  .typemaker .slots .sw{width:15px;height:15px;border-radius:4px}
+  .typemaker .row{display:flex;gap:6px;align-items:center}
+  .typemaker button{
+    font:inherit;font-size:11.5px;cursor:pointer;border:0;border-radius:6px;
+    padding:5px 10px;background:var(--ink);color:var(--plane);font-weight:650;
+  }
+  .typemaker button.x{background:none;color:var(--ink-muted);margin-left:auto;font-weight:500}
   .day.jump{animation:jump 1.1s ease-out}
   @keyframes jump{0%,22%{background:var(--drop,rgba(41,118,210,.14))}100%{background:transparent}}
   .stash{
@@ -373,14 +402,14 @@
     transition:filter .12s;
   }
   /* fill = WORK TYPE; the project is the glyph */
-  .w-script{--a:var(--w-script-a); --b:var(--w-script-b)}
-  .w-ui    {--a:var(--w-ui-a);     --b:var(--w-ui-b)}
-  .w-art   {--a:var(--w-art-a);    --b:var(--w-art-b); --on:#141413}
-  .w-market{--a:var(--w-market-a); --b:var(--w-market-b)}
-  .w-none  {--a:var(--w-none-a);   --b:var(--w-none-b)}
+  .w1{--a:var(--w-script-a); --b:var(--w-script-b)}
+  .w2{--a:var(--w-ui-a);     --b:var(--w-ui-b)}
+  .w3{--a:var(--w-art-a);    --b:var(--w-art-b); --on:#141413}
+  .w4{--a:var(--w-market-a); --b:var(--w-market-b)}
+  .w0{--a:var(--w-none-a);   --b:var(--w-none-b)}
   /* the bright yellow needs its own ring — a light chip on a near-white page
      has only 1.73:1 of edge, so the border does the work the fill cannot */
-  .w-art{box-shadow:var(--shadow), inset 0 0 0 1px rgba(11,11,11,.22)}
+  .w3{box-shadow:var(--shadow), inset 0 0 0 1px rgba(11,11,11,.22)}
   .cat-gw   {--a:var(--gw-a);    --b:var(--gw-b)}
   .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
   .cat-site {--a:var(--site-a);  --b:var(--site-b)}
@@ -541,7 +570,7 @@ const TASKS = [
    note:"Phone work — read a card, make a call. These need a person, not a script.",
    sub:[["34 wrong-title cards",0],["45 quality cards",0],["Hand rulings back",0]]},
 
-  {id:"sec", d:"2026-08-10", cat:"admin", pct:60, size:"moderate", t:"Security housekeeping",
+  {id:"sec", work:"sec", d:"2026-08-10", cat:"admin", pct:60, size:"moderate", t:"Security housekeeping",
    done:"The originals are deleted and the important ones rotated. Copying is not the finish.",
    note:"ESTIMATE — 31 items left, but the starting total was never recorded. Correct it.",
    sub:[["Work the list",0],["Delete the originals",0],["Rotate the important ones",0]]},
@@ -624,14 +653,14 @@ const TASKS = [
    note:"Small to do, large to get wrong. The 5th of September is the hard wall — after that the next safe window is November.",
    needs:["look","mp","bridge","email"]},
 
-  {id:"sodra", d:"2026-08-13", cat:"admin", pct:35, size:"moderate", t:"Submit the A1 to SODRA",
+  {id:"sodra", work:"legal", d:"2026-08-13", cat:"admin", pct:35, size:"moderate", t:"Submit the A1 to SODRA",
    done:"Contributions waived and the debt cancelled for the covered period — a written confirmation, not a submission receipt.",
    note:"Certificate arrived 11 Aug and is verified: UK legislation applies, 30 Apr 2026 to 5 Aug 2028, definitive rather than provisional. Blocked since 24 July, now waiting only on you.",
    sub:[["Certificate in hand and checked",1],["Find the exact period SODRA billed",0],["Submit it and request the waiver",0],["Handle any gap before 30 April",0]],
    log:[["2026-08-11","Verified from the paper: box 3.8 — employed in one state, self-employed in another. Article 13(3) puts you under the state where you are EMPLOYED, so the UK. That is the whole argument."],
         ["2026-08-11","Cover starts 30 April. Anything billed before that is not covered — check the billed period BEFORE submitting. If the UK job started earlier, get HMRC to amend the start date rather than argue the gap with SODRA."]]},
 
-  {id:"notice", d:"2026-08-31", cat:"admin", pct:0, size:"minor", t:"Give notice for the time away",
+  {id:"notice", work:"job", d:"2026-08-31", cat:"admin", pct:0, size:"minor", t:"Give notice for the time away",
    done:"The agency knows, two weeks ahead."},
 
   {id:"form", work:"ui", d:"", cat:"site", pct:90, size:"minor", t:"Contact form activation",
@@ -670,12 +699,12 @@ const PROCESSES = [
    healthy:"A cycle never ends without the next one ready.",
    note:"A dead pass between seasons is worse than no pass. Only worth starting once retention justifies it."},
 
-  {id:"rota", cat:"admin", size:"minor", t:"Check the rota",
+  {id:"rota", work:"job", cat:"admin", size:"minor", t:"Check the rota",
    every:"weekly · Thursdays", last:"2026-08-06", next:"2026-08-13",
    healthy:"Shifts known for the week ahead, and told to the manager.",
    note:"Issued Thursday evening. Bills minimum is two shifts a week — missing the rota is how a week quietly goes under."},
 
-  {id:"paper", cat:"admin", size:"minor", t:"Monthly paperwork",
+  {id:"paper", work:"tax", cat:"admin", size:"minor", t:"Monthly paperwork",
    every:"monthly", last:"2026-08-06", next:"2026-09-10",
    healthy:"Filed every month, including the empty ones. The penalty is for not filing, not for the amount.",
    note:"⚠ The one after next lands mid-trip — file it before leaving."}
@@ -694,12 +723,39 @@ const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
    security and farm work genuinely has no type — those stay grey rather than
    being forced into a box that does not fit. */
 const WORKS = {
-  script:{name:"Scripting"},
-  ui:    {name:"UI / UX"},
-  art:   {name:"Graphical"},
-  market:{name:"Marketing"},
-  none:  {name:"Other"}
+  /* Four COLOUR SLOTS, reused by every project. The palette only holds four
+     that stay separable, so a fifth global colour would not be readable —
+     instead each project maps its own types onto the same four, and the
+     project GLYPH disambiguates: a slot-1 chip with ● is Guess When scripting,
+     a slot-1 chip with ◆ is admin tax work. Colour plus shape is how a
+     categorical palette legitimately goes past its own limit. */
+  script:{name:"Scripting",   slot:1},
+  ui:    {name:"UI / UX",     slot:2},
+  art:   {name:"Graphical",   slot:3},
+  market:{name:"Marketing",   slot:4},
+
+  tax:   {name:"Tax & filing", slot:1},
+  legal: {name:"Paperwork",    slot:2},
+  sec:   {name:"Security",     slot:3},
+  job:   {name:"Job & rota",   slot:4},
+
+  build: {name:"Build & deploy", slot:1},
+  copy:  {name:"Copy & content", slot:2},
+
+  none:  {name:"Other",        slot:0}
 };
+/* which types each project actually offers — the composer and the filter show
+   only these, so you cannot file a farm task as "Battlepass" */
+const PROJECT_WORKS = {
+  gw:    ["script","ui","art","market"],
+  admin: ["tax","legal","sec","job"],
+  site:  ["ui","copy","build"],
+  park:  ["script","ui","art","market"]
+};
+const worksFor = pf => pf !== "all" && PROJECT_WORKS[pf]
+  ? PROJECT_WORKS[pf]
+  : [...new Set(Object.values(PROJECT_WORKS).flat())];
+const slotOf = w => (WORKS[w] || WORKS.none).slot;
 
 /* PEOPLE — the colour lives in CSS as .who-<id>, the same split the categories
    already use: JS holds the structure, CSS holds the palette. Adding a third
@@ -764,6 +820,11 @@ try {
   }
 } catch(e){}
 if (!Array.isArray(EDITS.added)) EDITS.added = [];
+if (!EDITS.works)     EDITS.works = {};      // types he defined himself
+if (!EDITS.projWorks) EDITS.projWorks = {};  // and which project offers them
+Object.assign(WORKS, EDITS.works);
+for (const [pf,list] of Object.entries(EDITS.projWorks))
+  PROJECT_WORKS[pf] = [...new Set([...(PROJECT_WORKS[pf] || []), ...list])];
 /* A task you added is pushed into TASKS itself rather than kept in a parallel
    list. Everything downstream — filters, counts, the calendar, drag, rename,
    the detail route — then works on it for free, instead of each one needing to
@@ -786,7 +847,8 @@ function addTask(d, fields){
 
 const titleOf = t => EDITS.names[t.id] || t.t;
 const dateOf  = t => (t.id in EDITS.dates) ? EDITS.dates[t.id] : t.d;
-const editCount = () => Object.keys(EDITS.names).length + Object.keys(EDITS.dates).length + EDITS.added.length;
+const editCount = () => Object.keys(EDITS.names).length + Object.keys(EDITS.dates).length +
+                        EDITS.added.length + Object.keys(EDITS.works).length;
 
 function setTitle(id, text){
   const orig = BY_ID[id]; if (!orig) return;
@@ -814,7 +876,7 @@ const ownerTag = t =>
 function chip(t){
   if (IS_PROC[t.id]){
     const s = procState(t);
-    return '<article class="pill proc ' + s.cls + " cat-" + t.cat + " w-" + (t.work || "none") + " sz-" + t.size +
+    return '<article class="pill proc ' + s.cls + " cat-" + t.cat + " w" + slotOf(t.work) + " sz-" + t.size +
              '" style="--p:' + s.pct + '%"><div class="top">' +
         '<span class="glyph" aria-hidden="true">↻</span>' +
         '<span class="lbl">' + esc(titleOf(t)) + "</span>" +
@@ -824,7 +886,7 @@ function chip(t){
       "</div></article>";
   }
   const pct = Math.max(0, Math.min(100, t.pct));
-  return '<article class="pill cat-' + t.cat + " w-" + (t.work || "none") + " sz-" + t.size +
+  return '<article class="pill cat-' + t.cat + " w" + slotOf(t.work) + " sz-" + t.size +
            '" style="--p:' + paintPct(pct) + '%">' +
       '<div class="top">' +
         '<span class="grip" aria-hidden="true" title="Drag to another day">⠿</span>' +
@@ -874,11 +936,15 @@ function workCount(w){
    step with the filter; one control that shows the swatch beside the name
    cannot drift out of date. */
 function workButtons(){
-  return ["all", ...Object.keys(WORKS)].map(w =>
-      '<button class="wtab' + (WFILTER === w ? " on" : "") + '" data-work="' + w + '">' +
-        (w === "all" ? '<i class="sw all"></i>' : '<i class="sw w-' + w + '"></i>') +
-        "<span>" + (w === "all" ? "Everything" : WORKS[w].name) + "</span>" +
-        '<b>' + workCount(w) + "</b></button>").join("");
+  const list = worksFor(PFILTER);
+  return ["all", ...list, "none"].map(w =>
+    '<button class="wtab' + (WFILTER === w ? " on" : "") + '" data-work="' + w + '">' +
+      (w === "all" ? '<i class="sw all"></i>' : '<i class="sw w' + slotOf(w) + '"></i>') +
+      "<span>" + esc(w === "all" ? "Everything" : (WORKS[w] ? WORKS[w].name : w)) + "</span>" +
+      '<b>' + workCount(w) + "</b></button>").join("") +
+    (PFILTER === "all" ? "" :
+      '<button class="wtab addtype" data-addtype="1"><i class="sw plus">+</i>' +
+      "<span>Add a type</span></button>");
 }
 function renderWorks(into){ into.innerHTML = "<h3>Work type</h3>" + workButtons(); }
 document.addEventListener("click", e => {
@@ -1238,6 +1304,10 @@ function openComposer(d){
   document.querySelector(".composer")?.remove();
   const slot = document.querySelector('.day[data-d="' + d + '"] .slot');
   if (!slot) return;
+  const selWorks = cur => '<select name="work">' +
+    worksFor(PFILTER !== "all" ? PFILTER : "gw").map(w =>
+      '<option value="' + w + '"' + (w === cur ? " selected" : "") + ">" +
+      esc(WORKS[w].name) + "</option>").join("") + "</select>";
   const sel = (name, obj, cur) => '<select name="' + name + '">' +
     Object.entries(obj).map(([k,v]) =>
       '<option value="' + k + '"' + (k === cur ? " selected" : "") + ">" +
@@ -1249,7 +1319,7 @@ function openComposer(d){
     '<input name="t" placeholder="What needs doing?" autocomplete="off" required>' +
     '<div class="row">' +
       sel("cat",  CATS,   PFILTER !== "all" ? PFILTER : "gw") +
-      sel("work", WORKS,  WFILTER !== "all" ? WFILTER : "script") +
+      selWorks(WFILTER !== "all" && WFILTER !== "none" ? WFILTER : worksFor(PFILTER)[0]) +
       sel("size", {minor:"Minor", moderate:"Moderate", major:"Major"}, "moderate") +
       sel("who",  PEOPLE, FILTER  !== "all" ? FILTER  : DEFAULT_WHO) +
       '<button type="submit">Add</button>' +
@@ -1272,7 +1342,42 @@ function openComposer(d){
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-add]");
   if (b) openComposer(b.dataset.add);
+  if (e.target.closest("[data-addtype]")) openTypeMaker();
 });
+
+/* A new work type belongs to ONE project — that is the whole point of making
+   them per-project — so it is only offered while a project is selected, and it
+   picks one of the four existing colour slots rather than inventing a fifth
+   colour that would not survive the separation check. */
+function openTypeMaker(){
+  if (PFILTER === "all") return;
+  document.querySelector(".typemaker")?.remove();
+  const host = document.querySelector("[data-addtype]");
+  if (!host) return;
+  const f = document.createElement("form");
+  f.className = "typemaker";
+  f.innerHTML = '<input name="name" placeholder="Type name" autocomplete="off" required>' +
+    '<div class="slots">' + [1,2,3,4].map(n =>
+      '<label><input type="radio" name="slot" value="' + n + '"' + (n===1?" checked":"") +
+      '><i class="sw w' + n + '"></i></label>').join("") + "</div>" +
+    '<div class="row"><button type="submit">Add</button>' +
+    '<button type="button" class="x">Cancel</button></div>';
+  host.after(f);
+  f.querySelector("input").focus();
+  f.addEventListener("submit", ev => {
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(f).entries());
+    const name = d.name.trim(); if (!name) return;
+    let id = name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "type";
+    while (WORKS[id]) id += "-2";
+    WORKS[id] = EDITS.works[id] = {name, slot:+d.slot};
+    (PROJECT_WORKS[PFILTER] ||= []).push(id);
+    (EDITS.projWorks[PFILTER] ||= []).push(id);
+    saveEdits(); route();
+  });
+  f.querySelector(".x").addEventListener("click", () => f.remove());
+  f.addEventListener("keydown", ev => { if (ev.key === "Escape") f.remove(); });
+}
 
 /* ---------------- drag a chip to another day ----------------
    HTML5 drag-and-drop is not an option: it has no touch support. Pointer
@@ -1387,6 +1492,8 @@ function stashBanner(){
   const nn = Object.keys(EDITS.names).length, nd = Object.keys(EDITS.dates).length,
         na = EDITS.added.length;
   const bits = [];
+  const nw = Object.keys(EDITS.works).length;
+  if (nw) bits.push(nw + " work type" + (nw>1?"s":""));
   if (na) bits.push(na + " new task" + (na>1?"s":""));
   if (nn) bits.push(nn + " rename" + (nn>1?"s":""));
   if (nd) bits.push(nd + " date" + (nd>1?"s":"") + " moved");
@@ -1436,6 +1543,12 @@ document.addEventListener("click", e => {
   if (e.target.closest(".go")) listScroll = scrollY;
   if (e.target.id === "stashcopy"){
     const rows = [];
+    // types first: a task referencing a type that does not exist in the file
+    // would paste in as grey, so the definition has to travel with it
+    for (const [k,v] of Object.entries(EDITS.works))
+      rows.push("  WORKS." + k + " = " + JSON.stringify(v) + ";");
+    for (const [pf,l] of Object.entries(EDITS.projWorks))
+      rows.push("  PROJECT_WORKS." + pf + ".push(" + l.map(x=>JSON.stringify(x)).join(", ") + ");");
     // a new task exports as a pasteable TASKS entry, not as a diff
     for (const t of EDITS.added){
       const o = {id:t.id, work:t.work, d:t.d, cat:t.cat, pct:0, size:t.size, t:t.t};
