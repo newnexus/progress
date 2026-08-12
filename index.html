@@ -233,33 +233,39 @@
     padding:13px 14px 14px;margin-bottom:11px;
   }
   .cal .mt{font-size:13px;font-weight:650;margin:0 0 9px;text-align:center}
-  .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .cal .dow{font-size:9.5px;color:var(--ink-muted);text-align:center;font-weight:700;padding-bottom:4px}
+  .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal .dow{font-size:10px;color:var(--ink-muted);text-align:center;font-weight:700;padding-bottom:4px}
+  /* Each day is a FIELD, not a number floating in space: every cell carries a
+     hairline and a fill, so the grid reads as a grid and the busy colours have
+     an edge to sit inside. */
   .cal button{
-    appearance:none;border:0;background:none;font:inherit;cursor:pointer;
-    aspect-ratio:1;border-radius:7px;font-size:12px;color:var(--ink-2);
+    appearance:none;border:0;font:inherit;cursor:pointer;
+    aspect-ratio:1;border-radius:7px;font-size:13px;font-weight:600;
+    color:var(--ink-2);background:var(--plane);
+    box-shadow:inset 0 0 0 1px var(--ring);
     display:flex;align-items:center;justify-content:center;position:relative;padding:0;
   }
   .cal button:disabled{color:var(--ink-muted);opacity:.3;cursor:default}
-  .cal button:hover:not(:disabled){background:var(--rule)}
-  .cal button.has{font-weight:700;color:var(--ink)}
+  .cal button:hover:not(:disabled){box-shadow:inset 0 0 0 2px var(--ink-muted)}
+  .cal button.has{font-weight:800;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink-muted)}
   /* a dot means work sits on that day — the number alone cannot say that */
   .cal button.has::after{
     content:"";position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
-    width:3.5px;height:3.5px;border-radius:50%;background:var(--gw-a);
+    width:4px;height:4px;border-radius:50%;background:var(--ink);
   }
   .cal button.today{background:var(--ink);color:var(--plane);font-weight:700}
   .cal button.today.has::after{background:var(--plane)}
   /* Ordered severity: free -> half -> booked. Tints rather than solid fills,
      so the day number keeps normal ink contrast at every level. */
-  .cal button.b-free{background:rgba(92,129,37,.20)}
-  .cal button.b-half{background:rgba(232,189,34,.28)}
+  .cal button.b-free{background:rgba(92,129,37,.34)}
+  .cal button.b-half{background:rgba(232,189,34,.46)}
   .cal button.b-full{
     background:repeating-linear-gradient(135deg,
-      rgba(192,58,58,.34) 0 4px, rgba(192,58,58,.16) 4px 8px);
+      rgba(192,58,58,.55) 0 4px, rgba(192,58,58,.28) 4px 8px);
     color:var(--ink);
   }
-  .cal button.today{background:var(--ink);color:var(--plane);font-weight:700}
+  .cal button.today{background:var(--ink);color:var(--plane);font-weight:800;
+                    box-shadow:inset 0 0 0 2px var(--ink)}
   .blegend{display:flex;flex-wrap:wrap;gap:4px 11px;padding:6px 2px 2px;
            font-size:10.5px;color:var(--ink-muted)}
   .blegend span{display:inline-flex;align-items:center;gap:5px}
@@ -1442,9 +1448,9 @@ function renderCal(){
 
   let html = "<h3>Calendar</h3>";
   const start = parse(TODAY);
-  // three, not two: the whole away block runs into October and a calendar
-  // that stops in September hides the half of it that is farm work
-  for (let k = 0; k < 3; k++){
+  // Two months. October's farm block is therefore off the end of this view —
+  // it is still coloured in the day headers of the feed itself.
+  for (let k = 0; k < 2; k++){
     const y = start.getFullYear(), m = start.getMonth() + k;
     const first = new Date(y, m, 1), total = new Date(y, m + 1, 0).getDate();
     const lead = (first.getDay() + 6) % 7;                    // Monday-first
