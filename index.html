@@ -737,6 +737,14 @@ const TASKS = [
    done:"—", note:"After the farm season. Build it only once a launched game gives it real requirements."},
   {id:"loc", work:"script", d:"", cat:"park", pct:0, size:"major", t:"European localisation",
    done:"—", note:"Post-launch. Ten locales on content that keeps moving is double work.", needs:["cards"]},
+  {id:"testkit", work:"script", d:"", cat:"park", pct:0, size:"moderate", t:"Unity template an AI can test itself in",
+   done:"A new project starts from a template where an agent writes a test, runs it, reads the failure and fixes its own first pass — without you in the loop.",
+   note:"PARKED ON PURPOSE (2026-08-16): not for Guess When, it is for the NEXT project. Resume at kickoff, not before. The point is the decisions that are free on day one and a refactor later — Guess When has no asmdef, so its code cannot be referenced by a test assembly at all.",
+   log:[["2026-08-16","Hooks that let an agent call what a button click calls test the HANDLER but not the WIRING to it — so they cannot tell you whether clicks and drags actually work. Donis spotted that himself."],
+        ["2026-08-16","InputTestFixture (already installed) injects real events through virtual mouse/touch devices, so hit-testing and drag are genuinely exercised. AltTester is the closer 'Playwright for Unity' but finds GameObjects, and UI Toolkit elements are not GameObjects."],
+        ["2026-08-16","The lever is keeping logic out of MonoBehaviours: EditMode tests run in milliseconds, PlayMode in tens of seconds. A 3-second loop gets used and a 90-second one gets abandoned."],
+        ["2026-08-16","Inject a clock and a seeded RNG or the whole idea backfires — an agent cannot tell a real failure from a flake, and it 'fixes' flakes with retries and tolerances, degrading the code while reporting success."]]},
+
   {id:"imgs", work:"script", d:"", cat:"park", pct:0, size:"moderate", t:"Self-hosted card images",
    done:"—", note:"Post-launch. Only pre-launch action: confirm cards store an image PATH, not a full URL."}
 ];
