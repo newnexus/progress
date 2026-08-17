@@ -734,6 +734,15 @@ const TASKS = [
         ["2026-08-16","Donis's idea, and better than mine: three views per bundle rather than a contact sheet. A picture is not wrong on its own, it is wrong NEXT TO what the card says, so the thumbnail sits beside the sentence."],
         ["2026-08-16","One card at a time with arrows is the only view that works on a phone. That matters more than it sounds: picking pictures is looking and tapping, and a night shift is twelve hours of exactly that."]]},
 
+  {id:"dailies", work:"script", d:"", cat:"gw", pct:27, size:"moderate", t:"More Daily Challenge collections",
+   done:"A player can play the Daily for a month without meeting the same set twice — 30 curated collections, each passing the gap-spread check.",
+   note:"Eight exist, so a set comes round every eight days: the same 25 cards reshuffled. The deck is not the limit — measured 2026-08-16, it holds ~62 single-axis themes with 25+ cards before any combinations. Curation is the limit.",
+   sub:[["Measure what themes the deck can support",1],["Generator proposes candidates + gap check",0],["Name and subtitle each one",0],["Reach 30 sets",0],["Refuse to publish a set holding an unbundled card",0]],
+   log:[["2026-08-16","Eight sets, 201 card slots, 7% of the deck. A theme returns every eight days and the only thing that changes is the order."],
+        ["2026-08-16","Material is not the constraint: field alone has 19 themes with 25+ cards, category 11, super 7, kind 8. Tags are useless for this — 612 of them and only one reaches 25 cards."],
+        ["2026-08-16","A daily set cannot be a list of ids. They draw from the WHOLE deck — only 3 of the 23 trade cards sit in bundles 1-3 — so a new player would have to fetch ~20 cards individually, which is the per-card Firestore pattern the delivery design exists to prevent. The payload has to carry its own cards."],
+        ["2026-08-16","Found while measuring: seven cards across faith, revolutions and trade are in NO bundle at all. On the day those sets play, a client resolving cards from bundles fails."]]},
+
   {id:"mp", work:"script", d:"2026-08-17", cat:"gw", pct:0, size:"moderate", t:"Multiplayer stress test",
    done:"Two testers played each other at the same time, on a near-final build.",
    note:"The long pole is calendars, not code. Book the people before the build is ready.",
