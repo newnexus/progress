@@ -577,10 +577,19 @@
    who   owner id from PEOPLE; omitted means DEFAULT_WHO
    ========================================================== */
 const TASKS = [
-  {id:"xpsfx", work:"art", d:"", cat:"gw", pct:0, size:"minor", t:"Sound for the XP bar filling",
+  {id:"xpsfx", work:"art", d:"", cat:"gw", pct:100, size:"minor", t:"Sound for the XP bar filling",
    done:"A sound file is in the project and plays as the bar fills on the results screen.",
-   note:"Donis's to find — the bar itself is already slowed to 1.4s so there is something to score. Needs to survive being heard after every single run, so short and quiet beats satisfying-once.",
-   log:[["2026-08-15","Asked for while testing 1.0.28. The fill was 0.6s and too fast to see, let alone hear."]]},
+   note:"Done. One clip covers the panel arriving and the bar filling, because they are one beat to the ear — the bar starts 32ms after the panel shows. It plays a second time only on a level-up, where the bar genuinely fills twice.",
+   log:[["2026-08-15","Asked for while testing 1.0.28. The fill was 0.6s and too fast to see, let alone hear."],
+        ["2026-08-17","xp-bar-fill.mp3 in the project, assigned on SfxBank and called from the results screen. Verified by finding the call site, not by trusting the assignment."]]},
+
+  {id:"drawersfx", work:"art", d:"2026-08-17", cat:"gw", pct:100, size:"minor", t:"Drawer sound for the card-bundle unpack",
+   done:"The unpack drawer makes a sound, it is a metal cabinet like the one drawn, and it is free to ship.",
+   note:"Cut by hand out of one 22-second CC0 take. The blocker was never the file — it was thought to need a decoder this environment lacks, and Unity is the decoder: DecompressOnLoad plus AudioClip.GetData hands back a float array.",
+   log:[["2026-08-16","Wooden pair (BigSoundBank #1499/#1500, CC0) in as a placeholder."],
+        ["2026-08-17","Donis: right shape, wrong object — the cabinet on screen is metal — and a loud bang at the end. Both fixed by changing source and choosing where to cut."],
+        ["2026-08-17","The take is 14 bangs with the slides hiding in the quiet between them, so a peak detector finds precisely the wrong seconds. An RMS timeline found the sustained stretches instead."],
+        ["2026-08-17","Crest factor 20.8 to 9.9 with RMS nearly doubled: the peak is now ten times the average instead of twenty, so the body of the slide is what you hear. The complaint answered as a number rather than an opinion."]]},
 
   {id:"studio", work:"ui", d:"2026-07-23", cat:"site", pct:100, size:"moderate", t:"Studio site",
    done:"Live on its own domain over HTTPS.",
@@ -633,11 +642,16 @@ const TASKS = [
    note:"Verified 11 Aug against the live Play API and both privacy pages — every one of them already reads kozzzygames@gmail.com, and the two-z spelling appears in no file anywhere. Either it was fixed unlogged or the original sighting was wrong.",
    log:[["2026-08-11","Checked rather than assumed: edits.details.get returns contactEmail=kozzzygames@gmail.com. Nothing to change."]]},
 
-  {id:"drag", work:"ui", d:"2026-08-11", cat:"gw", pct:0, size:"major", t:"Drag and prediction projection",
+  {id:"drag", work:"ui", d:"2026-08-11", cat:"gw", pct:65, size:"major", t:"Drag and prediction projection",
    done:"Clearly better on a phone by the 13th — or reverted. Not 'perfect'.",
-   note:"The only item on the list with no natural definition of done, which is why it has a hard cutoff. The current drag works and testers are playing it.",
+   note:"PAST ITS CUTOFF and deliberately still open. Projection was played and rejected on measurement, not taste; the replacement THUMB is better but still being tuned, so the default is unchanged. The cutoff did its job — it stopped this being shipped on a hunch.",
    needs:["track"],
-   sub:[["Prototype the projection",0],["Play it on a phone",0],["Keep or revert",0]]},
+   sub:[["Prototype the projection",1],["Play it on a phone",1],["Keep or revert",0]],
+   log:[["2026-08-16","Projection measured, not argued: a PURE VERTICAL drag moves the aim 444px sideways — 1.22 gap pitches — for a finger that only went straight up. Path-dependent too, so it cannot be learned. That is why it misplaced rather than missed."],
+        ["2026-08-16","Card aim became a dropdown of eight rather than one guess: EXACT, REACH (the old default, kept bit-for-bit as the baseline), REACH+, SIDEWAYS, SETTLE, PUSH, TAP, THUMB."],
+        ["2026-08-17","Donis picked THUMB as the upgrade after playing all seven, but said it still needs tweaking."],
+        ["2026-08-17","Its gain was an absolute 10 units of board per pixel against a board whose length changes all run — so one stretch crossed the whole timeline 1.4x at ten cards and needed 5.4 repeats at forty. Now derived from MaxScroll: one stretch is 0.6 of whatever is there, verified at exactly 60.0% across 10/20/40/80 cards."],
+        ["2026-08-17","Two more: the held-at-full-rate region had no end (500px of overstretch bought 5,000 extra units, now 0), and a correction still had to cross the full 484px free zone every time (now 194px, but only when the stretch being undone actually scrolled)."]]},
 
   {id:"reveal", work:"script", d:"2026-08-11", cat:"gw", pct:90, size:"moderate", t:"Relic year reveals",
    done:"Relics in a run uncover parts of the year, and the card shows it.",
