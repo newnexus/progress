@@ -577,6 +577,14 @@
    who   owner id from PEOPLE; omitted means DEFAULT_WHO
    ========================================================== */
 const TASKS = [
+  {id:"famemodel", work:"script", d:"", cat:"gw", pct:0, size:"moderate", t:"Rework how a bot decides it knows a card",
+   done:"A bot's chance of recognising a card is decided by something richer than one `difficulty` number plus a lifetime bonus, and Donis agrees it now reads like a person.",
+   note:"Deferred deliberately on 2026-08-23, not forgotten: 'i think fame is still more complicated than this'. What exists works and is measured — recognition is a cliff rather than a slope, and a birth/death year shifts it — but `difficulty` is a single Wikidata sitelink count, which measures FAME, and fame is not the same as how available a card is to a particular person. The lifetime term covers one axis of that gap. It is not obvious it covers the rest.",
+   log:[["2026-08-23","Recognition rebuilt as a probability cliff: difficulty drives a chance of recall, and the two outcomes have unrelated error sizes. The old smooth multiplier could never produce a 400-year miss."],
+        ["2026-08-23","Unrecognised cards are read as a visual ERA, and eras that look alike are confused — 17.6% of classical cards now land in the Renaissance, which is Donis's own example and falls out of the rule rather than being special-cased."],
+        ["2026-08-23","Birth and death years added. Death is a wall, and past it the belief is flat over everything later, so the bot plays the biggest available gap instead of guessing."],
+        ["2026-08-23","Donis: fame is still more complicated than this. Parked here rather than guessed at."]]},
+
   {id:"xpsfx", work:"art", d:"", cat:"gw", pct:100, size:"minor", t:"Sound for the XP bar filling",
    done:"A sound file is in the project and plays as the bar fills on the results screen.",
    note:"Done. One clip covers the panel arriving and the bar filling, because they are one beat to the ear — the bar starts 32ms after the panel shows. It plays a second time only on a level-up, where the bar genuinely fills twice.",
