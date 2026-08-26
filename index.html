@@ -141,6 +141,19 @@
     color:var(--on);opacity:.6;font-size:11px;line-height:1;padding:6px 4px;flex:none;
   }
   .caret:hover{opacity:1}
+  /* ⚠ ON A FINGER THIS WAS ABOUT 11x23px, AND IT SITS NEXT TO THE CHEVRON — so a
+     near miss opened the full page instead, which reads as "the caret does
+     nothing". Android asks for 48dp, Apple for 44pt. Widened only where there
+     is no hover, so desktop rows keep their spacing, and given a visible round
+     hit area so it looks like the button it always was. */
+  @media (hover:none){
+    .caret{
+      min-width:44px;min-height:38px;font-size:13px;
+      display:inline-flex;align-items:center;justify-content:center;
+      border-radius:50%;background:rgba(255,255,255,.10);opacity:.8;margin-right:2px;
+    }
+    .pill.open .caret{background:rgba(255,255,255,.20);opacity:1}
+  }
   .pill.open .caret{transform:rotate(180deg)}
   .fold{background:var(--surface);padding:12px 15px 14px;color:var(--ink-2)}
   .fold .fnote{margin:0 0 10px;font-size:12.5px;color:var(--ink-muted);line-height:1.45}
@@ -1896,7 +1909,7 @@ addEventListener("hashchange", route);
 (() => {
   const el = document.createElement("div");
   el.id = "build";
-  el.textContent = "build 2026-08-26.3";
+  el.textContent = "build 2026-08-26.4";
   el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
     + "opacity:.35;padding:26px 0 34px";
   document.body.append(el);
@@ -1945,7 +1958,13 @@ document.addEventListener("click", e => {
   if (!TOUCH.matches || suppressClick || drag) return;
   const pill = e.target.closest(".pill");
   if (!pill) return;
-  if (e.target.closest(".go") || e.target.closest(".grip") || e.target.closest("input")) return;
+  /* ⚠ [data-fold] IS THE CARET, AND OMITTING IT HERE BROKE IT. A tap on the
+     caret unfolded the row and then this handler navigated straight off it
+     to the full page — the row appeared to flash and jump. Every control
+     that has its own click belongs in this list. */
+  if (e.target.closest(".go") || e.target.closest(".grip")
+      || e.target.closest("[data-fold]") || e.target.closest("input")
+      || e.target.closest(".fold")) return;
   const id = (pill.querySelector(".go")?.getAttribute("href") || "").split("/").pop();
   if (!BY_ID[id]) return;
   listScroll = scrollY;                 // so Back returns you where you were
