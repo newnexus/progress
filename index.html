@@ -437,6 +437,12 @@
     /* a chip is a button, and buttons do not get text-selected — without this
        a double-click to rename highlights the label first */
     user-select:none;-webkit-user-select:none;
+    /* ⚠ AND THE LONG-PRESS MENU, WHICH user-select DOES NOT COVER. Every chip
+       contains an <a> (the chevron), so a press-and-hold is also the gesture
+       Android uses to offer "Open in new tab / Copy link address" — the same
+       240ms hold that starts a drag. Donis's screenshot caught that sheet
+       sitting over the page. The browser and the drag cannot both have it. */
+    -webkit-touch-callout:none;
     /* A FIXED radius, not 999px. Half the minor height, so a minor chip is
        still a perfect pill while taller ones keep the same corner and read as
        rectangles — the size difference then shows as shape, not just height. */
@@ -1757,19 +1763,14 @@ document.addEventListener("pointerdown", e => {
      already knows the two things it depends on: that the finger never moved, and
      that the hold never fired. Mouse is excluded on purpose — there, the first
      click of a double-click would navigate away before the rename could begin. */
-  const stop = ev => { live = false; clearTimeout(timer);
+  const stop = () => { live = false; clearTimeout(timer);
     removeEventListener("pointermove", watch); removeEventListener("pointerup", stop);
-    removeEventListener("pointercancel", stop);
-    if (!isMouse && ev && ev.type === "pointerup" && !drag && !suppressClick){
-      listScroll = scrollY;              // so Back returns you where you were
-      location.hash = "#/t/" + id;
-    } };
+    removeEventListener("pointercancel", stop); };
   const watch = ev => {
     if (!live) return;
     if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) <= SLOP) return;
     if (isMouse){ stop(); begin(pill, id, {x:ev.clientX, y:ev.clientY}); }
-    else stop();                       // the finger is scrolling, let it — and
-                                       // stop() with no event is a cancel, never a tap
+    else stop();                       // the finger is scrolling, let it
   };
   addEventListener("pointermove", watch, {passive:true});
   addEventListener("pointerup", stop, {passive:true});
@@ -1889,6 +1890,18 @@ function route(){
 }
 addEventListener("hashchange", route);
 
+/* A BUILD STAMP, because "is this the new file or a cached copy" has now been a
+   candidate explanation for three separate bugs in one day, and guessing is not
+   an answer. Bottom of the page, muted, out of the way. */
+(() => {
+  const el = document.createElement("div");
+  el.id = "build";
+  el.textContent = "build 2026-08-26.3";
+  el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
+    + "opacity:.35;padding:26px 0 34px";
+  document.body.append(el);
+})();
+
 // remember where the list was, so coming back doesn't dump you at the top
 document.addEventListener("click", e => {
   if (e.target.closest(".go")) listScroll = scrollY;
@@ -1915,6 +1928,30 @@ document.addEventListener("click", e => {
     e.target.textContent = "Copied";
   }
 });
+/* ⚠ TAP A ROW TO OPEN IT — ON TOUCH, AND OFF `click` RATHER THAN `pointerup`.
+   The first attempt hung this off the drag gesture's pointerup and never fired
+   on Donis's phone: when Chrome decides a touch belongs to scrolling it sends
+   `pointercancel` INSTEAD of pointerup, and `.pill` declares no `touch-action`,
+   so a tap with a pixel of travel is cancelled rather than completed. `click`
+   is synthesised on a tap either way.
+
+   Gated on (hover:none) because on a mouse this would break rename — the first
+   click of a double-click would navigate away before the second arrived — and
+   on suppressClick, which the drag sets for 80ms after a drop so the tail of a
+   drag is never read as a tap. The chevron is excluded because it is a real
+   link and already navigates on its own. */
+const TOUCH = matchMedia("(hover:none)");
+document.addEventListener("click", e => {
+  if (!TOUCH.matches || suppressClick || drag) return;
+  const pill = e.target.closest(".pill");
+  if (!pill) return;
+  if (e.target.closest(".go") || e.target.closest(".grip") || e.target.closest("input")) return;
+  const id = (pill.querySelector(".go")?.getAttribute("href") || "").split("/").pop();
+  if (!BY_ID[id]) return;
+  listScroll = scrollY;                 // so Back returns you where you were
+  location.hash = "#/t/" + id;
+});
+
 // double-click a chip to rename it; the single click still belongs to the link
 document.addEventListener("dblclick", e => {
   if (suppressClick) return;              // the tail of a drag, not a double-click
