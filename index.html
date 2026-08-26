@@ -515,6 +515,10 @@
     text-decoration:none;cursor:pointer;
   }
   .go:hover{opacity:1}
+  /* On a finger the chevron was a ~30px target. Widen it where there is no
+     hover — the same query the board already uses to tell touch from mouse —
+     rather than everywhere, which would cost desktop rows real width. */
+  @media (hover:none){ .go{padding:0 20px;min-width:44px} }
 
   /* ---------------- detail ---------------- */
   .back{display:inline-flex;align-items:center;gap:6px;color:var(--ink-muted);
@@ -1744,14 +1748,28 @@ document.addEventListener("pointerdown", e => {
   const isMouse = e.pointerType === "mouse";
   let live = true;
   const timer = isMouse ? 0 : setTimeout(() => { if (live) begin(pill, id, start); }, HOLD);
-  const stop = () => { live = false; clearTimeout(timer);
+  /* ⚠ A TAP ON A ROW USED TO DO NOTHING ON A PHONE, which is the device this
+     board is mostly read on. The chevron was the only way into a task's detail
+     and it is a ~30px target at the end of the row; everywhere else fell into
+     the gap between the two touch branches — too short for the hold that starts
+     a drag, too still for the movement that cancels it.
+     A tap is the missing third outcome, and it belongs here because this handler
+     already knows the two things it depends on: that the finger never moved, and
+     that the hold never fired. Mouse is excluded on purpose — there, the first
+     click of a double-click would navigate away before the rename could begin. */
+  const stop = ev => { live = false; clearTimeout(timer);
     removeEventListener("pointermove", watch); removeEventListener("pointerup", stop);
-    removeEventListener("pointercancel", stop); };
+    removeEventListener("pointercancel", stop);
+    if (!isMouse && ev && ev.type === "pointerup" && !drag && !suppressClick){
+      listScroll = scrollY;              // so Back returns you where you were
+      location.hash = "#/t/" + id;
+    } };
   const watch = ev => {
     if (!live) return;
     if (Math.hypot(ev.clientX-start.x, ev.clientY-start.y) <= SLOP) return;
     if (isMouse){ stop(); begin(pill, id, {x:ev.clientX, y:ev.clientY}); }
-    else stop();                       // the finger is scrolling, let it
+    else stop();                       // the finger is scrolling, let it — and
+                                       // stop() with no event is a cancel, never a tap
   };
   addEventListener("pointermove", watch, {passive:true});
   addEventListener("pointerup", stop, {passive:true});
