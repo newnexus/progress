@@ -243,7 +243,12 @@
     color:var(--ink-2);font-size:13px;font-weight:550;text-align:left;
   }
   .wtab:hover,.ptab:hover{background:var(--surface);color:var(--ink)}
-  .wtab.on,.ptab.on{background:var(--ink);color:var(--plane);font-weight:650}
+  /* ⚠ TEMPORARY — A/B MARKER, remove once the caret question is settled.
+     Selected chips are yellow instead of the usual ink so "am I on the new
+     build" is answerable from across the room. Donis asked for it after
+     four rounds where a cache, the wrong URL and a broken fix all looked
+     identical from here. */
+  .wtab.on,.ptab.on{background:#f5c518;color:#141413;font-weight:650}
   .wtab b,.ptab b{margin-left:auto;font-size:11px;font-weight:700;opacity:.55;
                   font-variant-numeric:tabular-nums}
   .wtab .sw,.ptab .sw{
@@ -422,7 +427,7 @@
     font-size:12.5px;font-weight:650;color:var(--ink-2);white-space:nowrap;
   }
   .tab:hover{color:var(--ink)}
-  .tab[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
+  .tab[aria-pressed="true"]{background:#f5c518;color:#141413}  /* ⚠ TEMPORARY, see above */
   .tab .n{font-size:10.5px;font-weight:700;opacity:.6;font-variant-numeric:tabular-nums}
   .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--who)}
 
@@ -1926,7 +1931,7 @@ addEventListener("hashchange", route);
 (() => {
   const el = document.createElement("div");
   el.id = "build";
-  el.textContent = "build 2026-08-26.5";
+  el.textContent = "build 2026-08-26.6 · yellow test";
   el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
     + "opacity:.35;padding:26px 0 34px";
   document.body.append(el);
