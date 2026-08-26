@@ -158,18 +158,28 @@
          currentColor throughout because `--on` is #fff on every chip except the
          art work-type, where it is near-black; a hard-coded white plate would
          be fine there but a hard-coded white arrow would disappear. */
-      font-size:15px;font-weight:700;line-height:1;opacity:1;
+      font-size:16px;font-weight:700;line-height:1;opacity:1;
       color:var(--on);
-      background:color-mix(in srgb, currentColor 14%, transparent);
-      box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+      /* ⚠ PLAIN rgba, NOT color-mix(currentColor). Build .5 used
+         color-mix(in srgb, currentColor …) and the plate DISAPPEARED on Donis's
+         phone: currentColor inside color-mix is a late addition, an unsupported
+         value makes the whole declaration invalid, and an invalid declaration is
+         dropped SILENTLY with no error anywhere. The button went back to being a
+         bare glyph. Two dumb rules beat one clever one. */
+      background:rgba(255,255,255,.18);
+      box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.42);
     }
-    /* Open just deepens the plate. The arrow already flips 180deg, so the
-       state is legible twice over without an invert() hack that would have to
-       work against two opposite ink colours. */
-    .pill.open .caret{
-      background:color-mix(in srgb, currentColor 30%, transparent);
-      box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent);
+    /* The art work-type is the ONLY chip whose ink is near-black rather than
+       white (--on:#141413) — the case color-mix was there to cover. The
+       work-type is already a class on the pill, so it costs one plain rule. */
+    .pill.w3 .caret{
+      background:rgba(0,0,0,.14);
+      box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.34);
     }
+    /* Open deepens the plate; the arrow already flips 180deg, so the state
+       reads twice over. */
+    .pill.open .caret{background:rgba(255,255,255,.34)}
+    .pill.open.w3 .caret{background:rgba(0,0,0,.26)}
   }
   .pill.open .caret{transform:rotate(180deg)}
   .fold{background:var(--surface);padding:12px 15px 14px;color:var(--ink-2)}
@@ -1931,7 +1941,7 @@ addEventListener("hashchange", route);
 (() => {
   const el = document.createElement("div");
   el.id = "build";
-  el.textContent = "build 2026-08-26.6 · yellow test";
+  el.textContent = "build 2026-08-26.7 · yellow test";
   el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
     + "opacity:.35;padding:26px 0 34px";
   document.body.append(el);
