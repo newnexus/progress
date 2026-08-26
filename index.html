@@ -141,46 +141,6 @@
     color:var(--on);opacity:.6;font-size:11px;line-height:1;padding:6px 4px;flex:none;
   }
   .caret:hover{opacity:1}
-  /* ⚠ ON A FINGER THIS WAS ABOUT 11x23px, AND IT SITS NEXT TO THE CHEVRON — so a
-     near miss opened the full page instead, which reads as "the caret does
-     nothing". Android asks for 48dp, Apple for 44pt. Widened only where there
-     is no hover, so desktop rows keep their spacing, and given a visible round
-     hit area so it looks like the button it always was. */
-  @media (hover:none){
-    .caret{
-      min-width:44px;min-height:38px;
-      display:inline-flex;align-items:center;justify-content:center;
-      border-radius:50%;margin-right:2px;
-      /* ⚠ THE GLYPH, NOT JUST THE BUTTON. The first pass sized the target and
-         left the arrow at 11px/.6, so a tiny mark floated in a 44px translucent
-         blob and the button read as EMPTY — Donis's words were "there is no
-         caret on the button", and he was describing exactly what was on screen.
-         currentColor throughout because `--on` is #fff on every chip except the
-         art work-type, where it is near-black; a hard-coded white plate would
-         be fine there but a hard-coded white arrow would disappear. */
-      font-size:16px;font-weight:700;line-height:1;opacity:1;
-      color:var(--on);
-      /* ⚠ PLAIN rgba, NOT color-mix(currentColor). Build .5 used
-         color-mix(in srgb, currentColor …) and the plate DISAPPEARED on Donis's
-         phone: currentColor inside color-mix is a late addition, an unsupported
-         value makes the whole declaration invalid, and an invalid declaration is
-         dropped SILENTLY with no error anywhere. The button went back to being a
-         bare glyph. Two dumb rules beat one clever one. */
-      background:rgba(255,255,255,.18);
-      box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.42);
-    }
-    /* The art work-type is the ONLY chip whose ink is near-black rather than
-       white (--on:#141413) — the case color-mix was there to cover. The
-       work-type is already a class on the pill, so it costs one plain rule. */
-    .pill.w3 .caret{
-      background:rgba(0,0,0,.14);
-      box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.34);
-    }
-    /* Open deepens the plate; the arrow already flips 180deg, so the state
-       reads twice over. */
-    .pill.open .caret{background:rgba(255,255,255,.34)}
-    .pill.open.w3 .caret{background:rgba(0,0,0,.26)}
-  }
   .pill.open .caret{transform:rotate(180deg)}
   .fold{background:var(--surface);padding:12px 15px 14px;color:var(--ink-2)}
   .fold .fnote{margin:0 0 10px;font-size:12.5px;color:var(--ink-muted);line-height:1.45}
@@ -280,12 +240,7 @@
     color:var(--ink-2);font-size:13px;font-weight:550;text-align:left;
   }
   .wtab:hover,.ptab:hover{background:var(--surface);color:var(--ink)}
-  /* ⚠ TEMPORARY — A/B MARKER, remove once the caret question is settled.
-     Selected chips are yellow instead of the usual ink so "am I on the new
-     build" is answerable from across the room. Donis asked for it after
-     four rounds where a cache, the wrong URL and a broken fix all looked
-     identical from here. */
-  .wtab.on,.ptab.on{background:#f5c518;color:#141413;font-weight:650}
+  .wtab.on,.ptab.on{background:var(--ink);color:var(--plane);font-weight:650}
   .wtab b,.ptab b{margin-left:auto;font-size:11px;font-weight:700;opacity:.55;
                   font-variant-numeric:tabular-nums}
   .wtab .sw,.ptab .sw{
@@ -464,7 +419,7 @@
     font-size:12.5px;font-weight:650;color:var(--ink-2);white-space:nowrap;
   }
   .tab:hover{color:var(--ink)}
-  .tab[aria-pressed="true"]{background:#f5c518;color:#141413}  /* ⚠ TEMPORARY, see above */
+  .tab[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
   .tab .n{font-size:10.5px;font-weight:700;opacity:.6;font-variant-numeric:tabular-nums}
   .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--who)}
 
@@ -593,11 +548,6 @@
     text-decoration:none;cursor:pointer;
   }
   .go:hover{opacity:1}
-  /* On a finger the chevron was a ~30px target. Widen it where there is no
-     hover — the same query the board already uses to tell touch from mouse —
-     rather than everywhere, which would cost desktop rows real width. */
-  @media (hover:none){ .go{padding:0 20px;min-width:44px} }
-
   /* ---------------- detail ---------------- */
   .back{display:inline-flex;align-items:center;gap:6px;color:var(--ink-muted);
         text-decoration:none;font-size:13px;padding:4px 0 14px}
@@ -2028,19 +1978,6 @@ addEventListener("keydown", e => { if (e.key === "Escape") closeParts(); });
 // following a link inside the menu leaves the menu behind unless it is closed
 addEventListener("hashchange", closeParts);
 addEventListener("hashchange", route);
-
-/* A BUILD STAMP, because "is this the new file or a cached copy" has now been a
-   candidate explanation for three separate bugs in one day, and guessing is not
-   an answer. Bottom of the page, muted, out of the way. */
-(() => {
-  const el = document.createElement("div");
-  el.id = "build";
-  el.textContent = "build 2026-08-26.8 · yellow test";
-  el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
-    + "opacity:.35;padding:26px 0 34px";
-  document.body.append(el);
-})();
-
 // remember where the list was, so coming back doesn't dump you at the top
 document.addEventListener("click", e => {
   if (e.target.closest(".go")) listScroll = scrollY;
