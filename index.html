@@ -237,6 +237,33 @@
   }
   .wstrip .wtab b,.wstrip .ptab b{margin-left:5px}
   .pstrip{margin-bottom:7px}
+  /* the caret, as a second hit area inside the chip */
+  .pcaret{
+    display:inline-flex;align-items:center;justify-content:center;
+    margin:-6px -8px -6px 6px;padding:0 9px;align-self:stretch;
+    font-size:11px;line-height:1;opacity:.65;border-radius:0 999px 999px 0;
+  }
+  .ptab.on .pcaret{opacity:.85}
+  @media (hover:none){ .pcaret{min-width:38px;font-size:13px;opacity:.9} }
+
+  /* Fixed on <body>: a menu inside .wstrip would be clipped by its overflow,
+     which is how the nested list came to render off the edge of the phone. */
+  .pmenu{
+    position:fixed;z-index:200;
+    background:var(--plane);border:1px solid var(--ring);border-radius:12px;
+    box-shadow:0 14px 40px rgba(0,0,0,.35);padding:6px;
+    max-height:min(60vh, 420px);overflow-y:auto;
+  }
+  .pmenu a{
+    display:flex;align-items:center;gap:9px;
+    padding:10px 11px;border-radius:9px;min-height:44px;
+    color:var(--ink-2);text-decoration:none;font-size:13.5px;
+  }
+  .pmenu a:hover{background:var(--surface);color:var(--ink)}
+  .pmenu a i{font-style:normal;width:16px;text-align:center;font-size:12px;opacity:.75}
+  .pmenu a.soon{opacity:.42}
+  .pmenu a.soon:hover{background:none;color:var(--ink-2);cursor:default}
+  .pmenu .ext{margin-left:auto;font-size:10px;opacity:.5}
   .pstrip .ptab{
     width:auto;flex:none;padding:6px 11px;border-radius:999px;font-size:12.5px;
     background:var(--surface);border:1px solid var(--ring);white-space:nowrap;
@@ -1556,27 +1583,91 @@ function projCount(c){
   return TASKS.filter(x => hit(x) && x.pct < 100).length +
          PROCESSES.filter(x => hit(x) && x.from !== "launch").length;
 }
-function projButtons(active){
-  const row = (id, name, glyph) =>
-    '<button class="ptab proj' + (PFILTER === id ? " on" : "") + '" data-proj="' + id + '">' +
+function projButtons(active, split){
+  /* A chip with more than one part carries a caret as a SECOND HIT AREA inside
+     itself: tap the name to filter, tap the caret to see the project's pages.
+     A <span>, not a <button> — a button inside a button is invalid and browsers
+     silently un-nest it, which would move the caret outside the chip. */
+  const row = (id, name, glyph) => {
+    const pr = PROJECTS[id];
+    const foldable = pr && pr.parts.length > 1;
+    return '<button class="ptab proj' + (PFILTER === id ? " on" : "") +
+      (foldable ? " has-parts" : "") + '" data-proj="' + id + '">' +
       '<i class="pg">' + glyph + "</i><span>" + name + "</span>" +
-      "<b>" + projCount(id) + "</b></button>";
+      "<b>" + projCount(id) + "</b>" +
+      (foldable ? '<span class="pcaret" role="button" tabindex="0"' +
+                  ' aria-label="Show ' + esc(name) + ' pages">▾</span>' : "") +
+      "</button>";
+  };
   let h = row("all", "All work", "◈");
   for (const [id,pr] of Object.entries(PROJECTS)){
     h += row(id, pr.name, GLYPH[id]);
-    // parts appear only under the project you are actually in
-    if (PFILTER === id && pr.parts.length > 1)
-      h += '<div class="parts">' + pr.parts.map(x =>
-        '<a href="' + (x.href || ("#/" + x.id)) + '"' +
-        (active === x.id ? ' aria-current="page"' : "") +
-        (x.href || x.live ? "" : ' class="soon"') + '><i>' + x.icon + "</i>" + x.name +
-        (x.href ? ' <span class="ext">↗</span>' : "") + "</a>").join("") + "</div>";
+    /* The RAIL still nests the list under its chip, because a vertical rail
+       renders that correctly. The phone passes split:true and gets the floating
+       menu instead — see openParts(). */
+    if (!split && PFILTER === id && pr.parts.length > 1)
+      h += '<div class="parts">' + partLinks(id, active) + "</div>";
   }
   return h;
 }
+
+function partLinks(id, active){
+  return PROJECTS[id].parts.map(x =>
+    '<a href="' + (x.href || ("#/" + x.id)) + '"' +
+    (active === x.id ? ' aria-current="page"' : "") +
+    (x.href || x.live ? "" : ' class="soon"') + '><i>' + x.icon + "</i>" + x.name +
+    (x.href ? ' <span class="ext">↗</span>' : "") + "</a>").join("");
+}
+
+/* ---- the floating parts menu ----
+   Fixed on <body>, never inside the strip. `.wstrip` is
+   `display:flex; overflow-x:auto`, and a menu parented inside it would be
+   clipped by that overflow — which is exactly how the nested version came to
+   render off the right edge of the phone with nothing to hint it was there. */
+let partsMenu = null;
+function closeParts(){
+  if (!partsMenu) return;
+  partsMenu.remove(); partsMenu = null;
+  removeEventListener("scroll", closeParts, true);
+  removeEventListener("resize", closeParts);
+}
+function openParts(chip, id){
+  closeParts();
+  const m = document.createElement("div");
+  m.className = "pmenu";
+  m.innerHTML = partLinks(id, null);
+  document.body.append(m);
+
+  const r = chip.getBoundingClientRect();
+  const w = Math.min(Math.max(r.width, 210), innerWidth - 16);
+  m.style.width = w + "px";
+  // clamped, so a chip near the right edge does not push the menu off-screen
+  m.style.left = Math.round(Math.min(Math.max(8, r.left), innerWidth - w - 8)) + "px";
+  const h = m.getBoundingClientRect().height;
+  // and flipped above when there is no room below
+  m.style.top = (r.bottom + h + 8 > innerHeight && r.top - h - 6 > 0)
+    ? Math.round(r.top - h - 6) + "px"
+    : Math.round(r.bottom + 6) + "px";
+
+  /* Capture-phase scroll: the strip scrolls sideways under the menu, and a menu
+     that stays put while its chip slides away is worse than one that closes. */
+  addEventListener("scroll", closeParts, true);
+  addEventListener("resize", closeParts);
+  partsMenu = m;
+}
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-proj]");
-  if (!b) return;
+  if (!b){ if (!e.target.closest(".pmenu")) closeParts(); return; }
+  /* ⚠ THE CARET BRANCHES BEFORE THE FILTER. One control, two hit areas: the
+     name switches project, the caret opens its pages. Without this the caret
+     would also change the filter under the menu it just opened. */
+  if (e.target.closest(".pcaret")){
+    const id = b.dataset.proj;
+    if (partsMenu) closeParts();
+    else if (PROJECTS[id] && PROJECTS[id].parts.length > 1) openParts(b, id);
+    return;
+  }
+  closeParts();
   PFILTER = b.dataset.proj;
   try { localStorage.setItem("proj", PFILTER); } catch(err){}
   route();
@@ -1926,13 +2017,16 @@ function route(){
     tabsEl.hidden = false;
     renderTabs();
     renderRail("");
-    wrap.innerHTML = doneToggle() + rollToggle() + '<div class="wstrip pstrip">' + projButtons(null) + "</div>" +
+    wrap.innerHTML = doneToggle() + rollToggle() + '<div class="wstrip pstrip">' + projButtons(null, true) + "</div>" +
                      '<div class="wstrip">' + workButtons() + "</div>" +
                      listView() + stashBanner();
     renderCal();
     scrollTo(0, listScroll);
   }
 }
+addEventListener("keydown", e => { if (e.key === "Escape") closeParts(); });
+// following a link inside the menu leaves the menu behind unless it is closed
+addEventListener("hashchange", closeParts);
 addEventListener("hashchange", route);
 
 /* A BUILD STAMP, because "is this the new file or a cached copy" has now been a
@@ -1941,7 +2035,7 @@ addEventListener("hashchange", route);
 (() => {
   const el = document.createElement("div");
   el.id = "build";
-  el.textContent = "build 2026-08-26.7 · yellow test";
+  el.textContent = "build 2026-08-26.8 · yellow test";
   el.style.cssText = "text-align:center;font-size:11px;letter-spacing:.06em;"
     + "opacity:.35;padding:26px 0 34px";
   document.body.append(el);
