@@ -20,6 +20,9 @@
     --admin-a:#c1552b; --admin-b:#9e4623;
     --site-a:#15875e;  --site-b:#116f4d;
     --park-a:#767671;  --park-b:#61615d;
+    /* WoW Vanilla: the hues left after people took violet and magenta sit too close to the
+       four above, so it is told apart by its glyph ■ first; crimson for the Undead. */
+    --wow-a:#a3283c;   --wow-b:#86202f;
     --rest:#4c4b47;
     --on:#fff;
     /* WORK TYPE — what KIND of work, now the chip fill. The project moved to
@@ -495,6 +498,7 @@
   .cat-admin{--a:var(--admin-a); --b:var(--admin-b)}
   .cat-site {--a:var(--site-a);  --b:var(--site-b)}
   .cat-park {--a:var(--park-a);  --b:var(--park-b)}
+  .cat-wow  {--a:var(--wow-a);   --b:var(--wow-b)}
   .pill:hover{filter:brightness(1.06)}
 
   /* SIZE — height is the encoding. Magnitude read as magnitude, legible while
@@ -602,7 +606,7 @@
    id    unique, used by the URL (#/t/<id>) and by needs[]
    d     the day it sits on ("" = no date, listed at the end)
    pct   completion 0-100
-   cat   gw | admin | site | park
+   cat   gw | admin | site | wow | park
    size  minor | moderate | major   (effort, NOT importance)
    done  what finished actually means — one line
    needs ids this task waits on; "blocks" is derived from it
@@ -962,6 +966,27 @@ const TASKS = [
    done:"A message sent from the site arrives.",
    note:"Everything else is live. Waiting on one sign-off."},
 
+  /* WoW Vanilla: game modes on top of benilla, a 1.12.1 client in Rust + Bevy. A hobby, no
+     deadlines: tasks stay undated unless done. Repo newnexus/benilla-survivor, branch survivor. */
+  {id:"survpc", work:"script", d:"2026-10-21", cat:"wow", pct:100, size:"major", t:"Survivor-like: playable PC test build",
+   done:"A Dropbox build starts on its own, enters Tirisfall as Undead, and plays: auto-aim and auto-attack, skill keys, level-up skill cards that pause the world, food and drink on the move.",
+   note:"An in-process pretend server feeds the stock benilla client; mobs come from the vmangos world DB. Build 5 is in Dropbox.",
+   sub:[["Pretend server, log in as Undead",1],["Tirisfall mobs at their real spots",1],["Combat, death, XP curve",1],["Level-up cards with pause",1],["Skill keys hit the auto-target",1]],
+   log:[["2026-10-21","Builds 1-5 in one day; build 5 fixes skill keys and shows the level-up flash. Code pushed to branch survivor."]]},
+  {id:"survandroid", work:"build", d:"", cat:"wow", pct:85, size:"major", t:"Survivor-like on Android",
+   done:"The APK runs on Donis's own phone: it enters the world, the character moves by thumb, and skills and level-up cards work by tapping.",
+   note:"Sideload only, never a store: the APK carries game data from Donis's own install.",
+   sub:[["APK builds (Unity's Android tools)",1],["Game data inside the APK",1],["Touch: hidden move and look sticks, tap to click",1],["Fullscreen, bigger UI",1],["Runs on the real phone",0]],
+   log:[["2026-10-21","Build 1 closed at launch on the phone. Build 3: data packed in, touch controls, fullscreen; all checked on the PC's Android emulator, not yet on the phone."]]},
+  {id:"survzombies", work:"script", d:"", cat:"wow", pct:0, size:"moderate", t:"Survivor-like: endless zombie waves",
+   done:"Zombies keep spawning around the player in growing waves for as long as the run lasts.", needs:["survpc"]},
+  {id:"survrunover", work:"ui", d:"", cat:"wow", pct:0, size:"moderate", t:"Survivor-like: death ends the run with a score",
+   done:"Dying shows a run-over screen with time survived, kills and level, and a new run starts from it.", needs:["survpc"]},
+  {id:"survautocast", work:"script", d:"", cat:"wow", pct:0, size:"minor", t:"Survivor-like: auto-cast on/off key",
+   done:"A key toggles auto-cast in game, no chat command and no addon.", needs:["survpc"]},
+  {id:"extraction", work:"script", d:"", cat:"wow", pct:0, size:"major", t:"Extraction mode (maybe)",
+   done:"—", note:"Online, Tarkov-style. Explicitly a maybe: nothing is built toward it until the survivor-like is playable end to end.", needs:["survzombies","survrunover"]},
+
   {id:"vector", work:"art", d:"", cat:"park", pct:0, size:"major", t:"Vector art tool",
    done:"—", note:"After the farm season. Build it only once a launched game gives it real requirements."},
   {id:"loc", work:"script", d:"", cat:"park", pct:0, size:"major", t:"European localisation",
@@ -1041,8 +1066,8 @@ function busyOf(d){
 }
 const BUSY_LABEL = {free:"Free", half:"Half busy", full:"Booked"};
 
-const GLYPH = {gw:"●", admin:"◆", site:"▲", park:"○"};
-const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", park:"Parked"};
+const GLYPH = {gw:"●", admin:"◆", site:"▲", wow:"■", park:"○"};
+const CATS  = {gw:"Guess When", admin:"Admin", site:"Sites", wow:"WoW Vanilla", park:"Parked"};
 /* Donis's four, plus a neutral. The four are all game-dev, so admin, tax,
    security and farm work genuinely has no type — those stay grey rather than
    being forced into a box that does not fit. */
@@ -1074,6 +1099,7 @@ const PROJECT_WORKS = {
   gw:    ["script","ui","art","market"],
   admin: ["tax","legal","sec","job"],
   site:  ["ui","copy","build"],
+  wow:   ["script","ui","art","build"],
   park:  ["script","ui","art","market"]
 };
 const worksFor = pf => pf !== "all" && PROJECT_WORKS[pf]
@@ -1635,6 +1661,7 @@ const PROJECTS = {
   gw:    {name:"Guess When", parts:SECTIONS},
   admin: {name:"Admin",      parts:[SECTIONS[0]]},
   site:  {name:"Sites",      parts:[SECTIONS[0]]},
+  wow:   {name:"WoW Vanilla", parts:[SECTIONS[0]]},
   park:  {name:"Parked",     parts:[SECTIONS[0]]}
 };
 let PFILTER = "all";
