@@ -1079,6 +1079,11 @@ const PROCESSES = [
    healthy:"Shifts known for the week ahead, and told to the manager.",
    note:"Issued Thursday evening. Bills minimum is two shifts a week — missing the rota is how a week quietly goes under."},
 
+  {id:"avail", work:"job", cat:"admin", size:"minor", t:"Send Staffline availability",
+   every:"weekly · by Thu 12:00", last:"", next:"2026-11-05",
+   healthy:"Next week's availability submitted before Thursday noon, every week, at least 3 days during peak.",
+   note:"Chosen 2026-11-03: a form every week rather than permanent days. Falling off the registry means no way back to the rotating pattern, so a missed Thursday is a week with no shifts. Reminder every Wednesday 18:30. The first week was already late: Staffline sent a reminder on 3 Nov."},
+
   {id:"paper", work:"tax", cat:"admin", size:"minor", t:"Monthly paperwork",
    every:"monthly", last:"2026-10-24", next:"2026-11-10",
    healthy:"Filed every month, including the empty ones. The penalty is for not filing, not for the amount.",
